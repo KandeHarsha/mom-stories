@@ -1,6 +1,7 @@
+// src/components/features/journal-view.tsx
 'use client';
 
-import React, { useState, useTransition, useRef } from 'react';
+import React, { useState, useTransition, useRef, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -20,45 +21,40 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { saveJournalEntryAction } from '@/app/actions';
 import type { View } from '@/app/page';
+import { getJournalEntries, type JournalEntry } from '@/services/journal-service';
 
-const mockEntries = [
-  {
-    id: 1,
-    title: 'A tiny flutter',
-    date: '3 days ago',
-    content: 'Felt the first kick today. It was the most magical, surreal feeling. Just a tiny flutter, but it made everything so real. This little life inside me... it’s overwhelming in the best way.',
-    image: 'https://placehold.co/600x400',
-    imageHint: 'ultrasound baby',
-    tags: ['pregnancy', 'milestone'],
-  },
-  {
-    id: 2,
-    title: 'Sleepless nights & sweet cuddles',
-    date: '1 week ago',
-    content: 'The nights are long, but the morning cuddles make it all worth it. Seeing that tiny smile... I wouldn\'t trade this exhaustion for anything. It feels like my heart has expanded to a size I never knew was possible.',
-    tags: ['newborn', 'reflection'],
-  },
-  {
-    id: 3,
-    title: 'A letter to my future child',
-    date: '2 weeks ago',
-    content: 'My dearest one, as I write this, you are just a dream in my heart. I wonder who you will become, what you will love. Know that you are wanted, you are loved, and I am already so proud to be your mother.',
-    tags: ['preparation', 'letter'],
-  },
-];
-
-interface JournalViewProps {
-  setActiveView: (view: View) => void;
-}
-
-export default function JournalView({ setActiveView }: JournalViewProps) {
+export default function JournalView({ setActiveView }: { setActiveView: (view: View) => void; }) {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [isSaving, startSaveTransition] = useTransition();
+  const [isLoading, startLoadingTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const [activeTab, setActiveTab] = useState('entries');
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+
+  const fetchEntries = () => {
+    startLoadingTransition(async () => {
+      try {
+        // Using a dummy user ID as per current implementation
+        const fetchedEntries = await getJournalEntries('dummy-user-id');
+        setEntries(fetchedEntries);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Oh no! Something went wrong.',
+          description: 'Failed to fetch your journal entries.',
+        });
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (activeTab === 'entries') {
+      fetchEntries();
+    }
+  }, [activeTab]);
 
   const handleSave = (formData: FormData) => {
-    startTransition(async () => {
+    startSaveTransition(async () => {
       const result = await saveJournalEntryAction(formData);
       if (result.error) {
         toast({
@@ -72,6 +68,7 @@ export default function JournalView({ setActiveView }: JournalViewProps) {
           description: 'Your journal entry has been saved successfully.',
         });
         formRef.current?.reset();
+        fetchEntries(); // Refetch entries to show the new one
         setActiveTab('entries');
       }
     });
@@ -89,25 +86,39 @@ export default function JournalView({ setActiveView }: JournalViewProps) {
                 <TabsTrigger value="new">New Entry</TabsTrigger>
             </TabsList>
             <TabsContent value="entries" className="mt-6">
-                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {mockEntries.map(entry => (
-                        <Card key={entry.id} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle>{entry.title}</CardTitle>
-                                <CardDescription>{entry.date}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                {entry.image && <div className="mb-4 rounded-lg overflow-hidden"><Image src={entry.image} alt={entry.title} width={600} height={400} data-ai-hint={entry.imageHint}/></div>}
-                                <p className="text-sm text-muted-foreground">{entry.content}</p>
-                            </CardContent>
-                             <CardFooter className="flex-wrap gap-2">
-                                {entry.tags.map(tag => (
-                                    <Badge key={tag} variant="secondary">{tag}</Badge>
-                                ))}
-                            </CardFooter>
-                        </Card>
-                    ))}
-                 </div>
+                 {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                 ) : entries.length === 0 ? (
+                    <Card className="flex flex-col items-center justify-center h-64 text-center p-6">
+                        <BookHeart className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-xl font-semibold">Your Journal is Empty</h3>
+                        <p className="text-muted-foreground mt-2">Click on the "New Entry" tab to write your first memory.</p>
+                    </Card>
+                 ) : (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {entries.map(entry => (
+                            <Card key={entry.id} className="flex flex-col">
+                                <CardHeader>
+                                    <CardTitle>{entry.title}</CardTitle>
+                                    <CardDescription>{entry.createdAt}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    {entry.imageUrl && <div className="mb-4 rounded-lg overflow-hidden"><Image src={entry.imageUrl} alt={entry.title} width={600} height={400} data-ai-hint="journal entry"/></div>}
+                                    <p className="text-sm text-muted-foreground">{entry.content}</p>
+                                </CardContent>
+                                {entry.tags && entry.tags.length > 0 && (
+                                    <CardFooter className="flex-wrap gap-2">
+                                        {entry.tags.map(tag => (
+                                            <Badge key={tag} variant="secondary">{tag}</Badge>
+                                        ))}
+                                    </CardFooter>
+                                )}
+                            </Card>
+                        ))}
+                    </div>
+                 )}
             </TabsContent>
             <TabsContent value="new" className="mt-6">
                 <Card className="max-w-2xl mx-auto">
@@ -149,8 +160,8 @@ export default function JournalView({ setActiveView }: JournalViewProps) {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button type="submit" disabled={isPending} className="w-full">
-                                {isPending ? (
+                            <Button type="submit" disabled={isSaving} className="w-full">
+                                {isSaving ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         Saving...
