@@ -6,9 +6,8 @@
  * - SaveJournalEntryInput - The input type for the saveJournalEntry function.
  */
 
-import { ai } from '@/ai/genkit';
 import { addJournalEntry } from '@/services/journal-service';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const SaveJournalEntryInputSchema = z.object({
   userId: z.string(),
@@ -21,16 +20,5 @@ const SaveJournalEntryInputSchema = z.object({
 export type SaveJournalEntryInput = z.infer<typeof SaveJournalEntryInputSchema>;
 
 export async function saveJournalEntry(input: SaveJournalEntryInput): Promise<void> {
-    await saveJournalEntryFlow(input);
+    await addJournalEntry(input);
 }
-
-const saveJournalEntryFlow = ai.defineFlow(
-    {
-        name: 'saveJournalEntryFlow',
-        inputSchema: SaveJournalEntryInputSchema,
-        outputSchema: z.void(),
-    },
-    async (input) => {
-        await addJournalEntry(input);
-    }
-);
