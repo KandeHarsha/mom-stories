@@ -3,6 +3,7 @@
 
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
+import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
 import { z } from 'zod';
 
 const promptSchema = z.object({
@@ -51,4 +52,34 @@ export async function getSupportAnswer(formData: FormData) {
   } catch (e) {
       return { error: 'Failed to get an answer. Please try again later.' };
   }
+}
+
+const journalEntrySchema = z.object({
+    title: z.string().min(1, 'Title is required.'),
+    content: z.string().min(1, 'Content is required.'),
+    userId: z.string(),
+    imageUrl: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+});
+
+export async function saveJournalEntryAction(formData: FormData) {
+    const rawData = {
+        title: formData.get('title'),
+        content: formData.get('content'),
+        // Using a dummy user ID for now, as requested.
+        userId: 'dummy-user-id',
+    };
+
+    const validatedInput = journalEntrySchema.safeParse(rawData);
+
+    if (!validatedInput.success) {
+        return { error: validatedInput.error.errors.map(e => e.message).join(', ') };
+    }
+
+    try {
+        await saveJournalEntry(validatedInput.data);
+        return { success: true };
+    } catch (e) {
+        return { error: 'Failed to save journal entry. Please try again later.' };
+    }
 }

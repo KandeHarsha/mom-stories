@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useTransition, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -15,8 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { BookHeart, ImagePlus, Mic } from 'lucide-react';
+import { BookHeart, ImagePlus, Mic, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
+import { saveJournalEntryAction } from '@/app/actions';
 
 const mockEntries = [
   {
@@ -46,13 +48,39 @@ const mockEntries = [
 
 
 export default function JournalView() {
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [activeTab, setActiveTab] = useState('entries');
+
+  const handleSave = (formData: FormData) => {
+    startTransition(async () => {
+      const result = await saveJournalEntryAction(formData);
+      if (result.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Oh no! Something went wrong.',
+          description: result.error,
+        });
+      } else if (result.success) {
+        toast({
+          title: 'Entry Saved!',
+          description: 'Your journal entry has been saved successfully.',
+        });
+        formRef.current?.reset();
+        // Maybe switch back to entries view
+        setActiveTab('entries');
+      }
+    });
+  };
+
   return (
     <div>
         <div className="mb-6">
             <h2 className="text-3xl font-bold font-headline tracking-tight">Your Private Journal</h2>
             <p className="text-muted-foreground mt-1">A safe space to capture every moment, thought, and feeling.</p>
         </div>
-        <Tabs defaultValue="entries" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-md">
                 <TabsTrigger value="entries">My Entries</TabsTrigger>
                 <TabsTrigger value="new">New Entry</TabsTrigger>
@@ -80,45 +108,56 @@ export default function JournalView() {
             </TabsContent>
             <TabsContent value="new" className="mt-6">
                 <Card className="max-w-2xl mx-auto">
-                    <CardHeader>
-                         <CardTitle className="flex items-center gap-2">
-                           <BookHeart className="h-6 w-6 text-primary"/>
-                           Create a New Journal Entry
-                         </CardTitle>
-                         <CardDescription>What's on your mind and in your heart today?</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-2">
-                           <Label htmlFor="title">Title</Label>
-                           <Input id="title" placeholder="e.g., A special moment, a worry, a dream..."/>
-                        </div>
-                         <div className="space-y-2">
-                           <Label htmlFor="content">Your thoughts</Label>
-                           <Textarea id="content" placeholder="Let it all flow..." rows={8}/>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <div className="space-y-2">
-                               <Label htmlFor="picture">Add a photo</Label>
-                               <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                                 <label htmlFor="picture" className="cursor-pointer">
-                                   <ImagePlus className="h-5 w-5"/>
-                                   <span>Upload Image</span>
-                                 </label>
-                               </Button>
-                               <Input id="picture" type="file" className="hidden" />
-                           </div>
-                           <div className="space-y-2">
-                               <Label>Record a voice note</Label>
-                               <Button variant="outline" className="w-full justify-start gap-2">
-                                   <Mic className="h-5 w-5"/>
-                                   <span>Start Recording</span>
-                               </Button>
-                           </div>
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button className="w-full">Save Entry</Button>
-                    </CardFooter>
+                    <form action={handleSave} ref={formRef}>
+                        <CardHeader>
+                             <CardTitle className="flex items-center gap-2">
+                               <BookHeart className="h-6 w-6 text-primary"/>
+                               Create a New Journal Entry
+                             </CardTitle>
+                             <CardDescription>What's on your mind and in your heart today?</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-2">
+                               <Label htmlFor="title">Title</Label>
+                               <Input id="title" name="title" placeholder="e.g., A special moment, a worry, a dream..." required/>
+                            </div>
+                             <div className="space-y-2">
+                               <Label htmlFor="content">Your thoughts</Label>
+                               <Textarea id="content" name="content" placeholder="Let it all flow..." rows={8} required/>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div className="space-y-2">
+                                   <Label htmlFor="picture">Add a photo</Label>
+                                   <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                                     <label htmlFor="picture" className="cursor-pointer">
+                                       <ImagePlus className="h-5 w-5"/>
+                                       <span>Upload Image</span>
+                                     </label>
+                                   </Button>
+                                   <Input id="picture" name="picture" type="file" className="hidden" />
+                               </div>
+                               <div className="space-y-2">
+                                   <Label>Record a voice note</Label>
+                                   <Button variant="outline" className="w-full justify-start gap-2" disabled>
+                                       <Mic className="h-5 w-5"/>
+                                       <span>Start Recording</span>
+                                   </Button>
+                               </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Button type="submit" disabled={isPending} className="w-full">
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save Entry'
+                                )}
+                            </Button>
+                        </CardFooter>
+                    </form>
                 </Card>
             </TabsContent>
         </Tabs>
