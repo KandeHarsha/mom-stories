@@ -30,7 +30,7 @@ const useTheme = () => {
 // In a real app, you would use a context provider to manage auth state.
 const useAuth = () => {
   return {
-    isLoggedIn: false, // Set to false to show login button
+    isLoggedIn: true, // Set to true to show user nav for now
     user: {
       name: 'Mother',
       email: 'mom@example.com',
