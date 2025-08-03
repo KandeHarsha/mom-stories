@@ -19,6 +19,7 @@ import { BookHeart, ImagePlus, Mic, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { saveJournalEntryAction } from '@/app/actions';
+import type { View } from '@/app/page';
 
 const mockEntries = [
   {
@@ -46,8 +47,11 @@ const mockEntries = [
   },
 ];
 
+interface JournalViewProps {
+  setActiveView: (view: View) => void;
+}
 
-export default function JournalView() {
+export default function JournalView({ setActiveView }: JournalViewProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -68,7 +72,6 @@ export default function JournalView() {
           description: 'Your journal entry has been saved successfully.',
         });
         formRef.current?.reset();
-        // Maybe switch back to entries view
         setActiveTab('entries');
       }
     });

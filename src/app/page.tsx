@@ -18,7 +18,7 @@ export default function Home() {
       case 'dashboard':
         return <DashboardView setActiveView={setActiveView} />;
       case 'journal':
-        return <JournalView />;
+        return <JournalView setActiveView={setActiveView} />;
       case 'memory-box':
         return <MemoryBoxView />;
       case 'ai-support':
