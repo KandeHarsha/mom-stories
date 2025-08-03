@@ -1,3 +1,4 @@
+
 'use client';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, LogIn } from "lucide-react";
+import Link from "next/link";
 
 // This is a placeholder for theme switching logic.
 // In a real app, you would use a theme provider (e.g., next-themes).
@@ -24,8 +26,21 @@ const useTheme = () => {
     return { theme, toggleTheme };
 };
 
+// This is a placeholder for auth state.
+// In a real app, you would use a context provider to manage auth state.
+const useAuth = () => {
+  return {
+    isLoggedIn: false, // Set to false to show login button
+    user: {
+      name: 'Mother',
+      email: 'mom@example.com',
+    }
+  }
+}
+
 export function AppHeader() {
   const { toggleTheme, theme } = useTheme();
+  const { isLoggedIn } = useAuth();
 
   return (
     <div className="border-b">
@@ -36,7 +51,14 @@ export function AppHeader() {
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
-          <UserNav />
+          {isLoggedIn ? <UserNav /> : (
+            <Button asChild>
+              <Link href="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -44,6 +66,7 @@ export function AppHeader() {
 }
 
 function UserNav() {
+  const { user } = useAuth();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -57,9 +80,9 @@ function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Mother</p>
+            <p className="text-sm font-medium leading-none">{user.name}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              mom@example.com
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>

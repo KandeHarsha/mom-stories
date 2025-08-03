@@ -1,9 +1,12 @@
+
 // src/app/actions.ts
 'use server';
 
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
+import { signInUser } from '@/ai/flows/sign-in-user';
+import { signUpUser } from '@/ai/flows/sign-up-user';
 import { z } from 'zod';
 
 const promptSchema = z.object({
@@ -82,4 +85,49 @@ export async function saveJournalEntryAction(formData: FormData) {
     } catch (e) {
         return { error: 'Failed to save journal entry. Please try again later.' };
     }
+}
+
+const authSchema = z.object({
+  email: z.string().email('Invalid email address.'),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
+});
+
+export async function signUpUserAction(formData: FormData) {
+  const rawData = {
+    email: formData.get('email'),
+    password: formData.get('password'),
+  };
+
+  const validatedInput = authSchema.safeParse(rawData);
+
+  if (!validatedInput.success) {
+    return { error: validatedInput.error.errors.map((e) => e.message).join(', ') };
+  }
+
+  try {
+    const result = await signUpUser(validatedInput.data);
+    return { uid: result.uid };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+export async function signInUserAction(formData: FormData) {
+  const rawData = {
+    email: formData.get('email'),
+    password: formData.get('password'),
+  };
+
+  const validatedInput = authSchema.safeParse(rawData);
+
+  if (!validatedInput.success) {
+    return { error: validatedInput.error.errors.map((e) => e.message).join(', ') };
+  }
+
+  try {
+    const result = await signInUser(validatedInput.data);
+    return { uid: result.uid };
+  } catch (e: any) {
+    return { error: e.message };
+  }
 }
