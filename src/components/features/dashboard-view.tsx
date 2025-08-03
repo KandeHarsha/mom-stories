@@ -16,22 +16,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { getJournalingPrompt } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Wand2, ArrowRight } from 'lucide-react';
-import type { View } from '@/app/page';
+import { useRouter } from 'next/navigation';
 
-interface DashboardViewProps {
-  setActiveView: (view: View) => void;
-}
 
-export default function DashboardView({ setActiveView }: DashboardViewProps) {
+export default function DashboardView() {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [prompt, setPrompt] = useState<string>('Your personalized prompt will appear here. ✨');
+  const router = useRouter();
 
   const handleSubmit = (formData: FormData) => {
     startTransition(async () => {
@@ -117,17 +114,17 @@ export default function DashboardView({ setActiveView }: DashboardViewProps) {
           <FeatureCard
             title="Private Journal"
             description="Chronicle your journey with text, voice, and photos."
-            onClick={() => setActiveView('journal')}
+            onClick={() => router.push('/journal')}
           />
           <FeatureCard
             title="Gentle AI Support"
             description="Ask questions and receive non-clinical, emotional guidance."
-            onClick={() => setActiveView('ai-support')}
+            onClick={() => router.push('/ai-support')}
           />
           <FeatureCard
             title="Memory Box"
             description="Securely store precious photos, letters, and keepsakes."
-            onClick={() => setActiveView('memory-box')}
+            onClick={() => router.push('/memory-box')}
           />
         </div>
       </div>

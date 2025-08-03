@@ -20,10 +20,9 @@ import { BookHeart, ImagePlus, Mic, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { saveJournalEntryAction } from '@/app/actions';
-import type { View } from '@/app/page';
 import { getJournalEntries, type JournalEntry } from '@/services/journal-service';
 
-export default function JournalView({ setActiveView }: { setActiveView: (view: View) => void; }) {
+export default function JournalView() {
   const { toast } = useToast();
   const [isSaving, startSaveTransition] = useTransition();
   const [isLoading, startLoadingTransition] = useTransition();
