@@ -1,3 +1,4 @@
+
 // src/services/journal-service.ts
 import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp } from 'firebase/firestore';
@@ -30,13 +31,13 @@ export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdA
     }
 }
 
-export async function uploadImageAndGetURL(imageFile: File, userId: string): Promise<string> {
-    if (!imageFile) {
-        throw new Error("No image file provided.");
+export async function uploadImageAndGetURL(imageBuffer: ArrayBuffer, fileName: string, userId: string): Promise<string> {
+    if (!imageBuffer) {
+        throw new Error("No image data provided.");
     }
-    const storageRef = ref(storage, `journal-images/${userId}/${Date.now()}-${imageFile.name}`);
+    const storageRef = ref(storage, `journal-images/${userId}/${Date.now()}-${fileName}`);
     try {
-        const snapshot = await uploadBytes(storageRef, imageFile);
+        const snapshot = await uploadBytes(storageRef, imageBuffer);
         const downloadURL = await getDownloadURL(snapshot.ref);
         return downloadURL;
     } catch (e) {

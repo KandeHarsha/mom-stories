@@ -72,8 +72,11 @@ export async function saveJournalEntryAction(formData: FormData) {
 
     if (imageFile && imageFile.size > 0) {
         try {
-            imageUrl = await uploadImageAndGetURL(imageFile, DUMMY_USER_ID);
+            const imageBuffer = await imageFile.arrayBuffer();
+            imageUrl = await uploadImageAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID);
         } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+            console.error("Upload error in action:", errorMessage);
             return { error: 'Failed to upload image. Please try again later.' };
         }
     }
