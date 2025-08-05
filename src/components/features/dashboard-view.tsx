@@ -50,7 +50,7 @@ export default function DashboardView() {
       <div className="text-center">
         <h2 className="text-3xl font-bold font-headline tracking-tight">Welcome to Your Sacred Space</h2>
         <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Mama's Embrace is your private companion through the beautiful, messy, and profound journey of motherhood.
+          Mom Stories is your private companion through the beautiful, messy, and profound journey of motherhood.
           Here, you are safe, supported, and empowered.
         </p>
       </div>

@@ -36,7 +36,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="flex h-16 items-center border-b px-6">
           <Link href="/" className="flex items-center gap-2 font-headline font-semibold text-lg">
             <HeartHandshake className="h-6 w-6 text-primary" />
-            <span>Mama's Embrace</span>
+            <span>Mom Stories</span>
           </Link>
         </div>
         <nav className="flex-1 overflow-auto py-4">
@@ -59,7 +59,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
            {/* Mobile Menu can be added here */}
            <div className="sm:hidden">
-            <Link href="/" className="text-lg font-bold tracking-tight font-headline">Mama's Embrace</Link>
+            <Link href="/" className="text-lg font-bold tracking-tight font-headline">Mom Stories</Link>
            </div>
            <div className="ml-auto flex items-center space-x-4">
              <AppHeader />

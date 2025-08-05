@@ -1,4 +1,4 @@
-# **App Name**: Mama's Embrace
+# **App Name**: Mom Stories
 
 ## Core Features:
 

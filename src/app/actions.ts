@@ -5,8 +5,11 @@
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
-import { uploadFileAndGetURL } from '@/services/journal-service';
+import { uploadFileAndGetURL, type JournalEntryData } from '@/services/journal-service';
+import { getUserProfile, updateUserProfile } from '@/services/user-service';
 import { z } from 'zod';
+
+const DUMMY_USER_ID = 'dummy-user-id'; // Use a consistent dummy user ID
 
 const promptSchema = z.object({
   stageOfMotherhood: z.string().min(1, 'Stage of motherhood is required.'),
@@ -66,22 +69,14 @@ const journalEntrySchema = z.object({
 });
 
 export async function saveJournalEntryAction(formData: FormData) {
-    const DUMMY_USER_ID = 'dummy-user-id';
     
-    const dataToSave: {
-        title: string;
-        content: string;
-        userId: string;
-        imageUrl?: string;
-        voiceNoteUrl?: string;
-        tags?: string[];
-    } = {
+    const dataToSave: Omit<JournalEntryData, 'createdAt'> = {
         title: formData.get('title') as string,
         content: formData.get('content') as string,
         userId: DUMMY_USER_ID,
     };
 
-    const imageFile = formData.get('picture') as File;
+    const imageFile = formData.get('picture') as File | null;
     if (imageFile && imageFile.size > 0) {
         try {
             const imageBuffer = await imageFile.arrayBuffer();
@@ -93,7 +88,7 @@ export async function saveJournalEntryAction(formData: FormData) {
         }
     }
 
-    const voiceNoteFile = formData.get('voiceNote') as File;
+    const voiceNoteFile = formData.get('voiceNote') as File | null;
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
@@ -118,5 +113,34 @@ export async function saveJournalEntryAction(formData: FormData) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
         console.error("Save error in action:", errorMessage);
         return { error: 'Failed to save journal entry. Please try again later.' };
+    }
+}
+
+export async function getUserProfileAction() {
+    try {
+        const profile = await getUserProfile(DUMMY_USER_ID);
+        return profile;
+    } catch(e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+        console.error("Get profile error in action:", errorMessage);
+        return { error: 'Failed to get user profile.' };
+    }
+}
+
+const phaseSchema = z.string().min(1, 'Phase cannot be empty');
+
+export async function updateUserPhaseAction(phase: string) {
+    const validatedPhase = phaseSchema.safeParse(phase);
+     if (!validatedPhase.success) {
+        return { error: validatedPhase.error.errors.map(e => e.message).join(', ') };
+    }
+
+    try {
+        await updateUserProfile(DUMMY_USER_ID, { phase: validatedPhase.data as any });
+        return { success: true };
+    } catch(e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+        console.error("Update profile error in action:", errorMessage);
+        return { error: 'Failed to update profile.' };
     }
 }

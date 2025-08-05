@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Moon, Sun, LogIn } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // This is a placeholder for theme switching logic.
 // In a real app, you would use a theme provider (e.g., next-themes).
@@ -45,7 +46,7 @@ export function AppHeader() {
   return (
     <div className="border-b">
       <div className="flex h-16 items-center px-4 md:px-8">
-        <h1 className="text-2xl font-bold tracking-tight font-headline">Mama's Embrace</h1>
+        <h1 className="text-2xl font-bold tracking-tight font-headline">Mom Stories</h1>
         <div className="ml-auto flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -67,6 +68,8 @@ export function AppHeader() {
 
 function UserNav() {
   const { user } = useAuth();
+  const router = useRouter();
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -88,7 +91,7 @@ function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>Profile</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/profile')}>Profile</DropdownMenuItem>
           <DropdownMenuItem>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
