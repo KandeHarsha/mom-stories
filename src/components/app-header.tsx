@@ -46,7 +46,6 @@ export function AppHeader() {
   return (
     <div className="border-b">
       <div className="flex h-16 items-center px-4 md:px-8">
-        <h1 className="text-2xl font-bold tracking-tight font-headline">Mom Stories</h1>
         <div className="ml-auto flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -75,7 +74,7 @@ function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://placehold.co/40x40" alt="@mom" data-ai-hint="woman mother" />
+            <AvatarImage src="https://placehold.co/40x40/f0f8ff/e6e6fa" alt="@mom" data-ai-hint="mother abstract" />
             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>
