@@ -1,6 +1,7 @@
 // src/services/journal-service.ts
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export interface JournalEntry {
     id: string;
@@ -26,6 +27,21 @@ export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdA
     } catch (e) {
         console.error("Error adding document: ", e);
         throw new Error('Could not save journal entry.');
+    }
+}
+
+export async function uploadImageAndGetURL(imageFile: File, userId: string): Promise<string> {
+    if (!imageFile) {
+        throw new Error("No image file provided.");
+    }
+    const storageRef = ref(storage, `journal-images/${userId}/${Date.now()}-${imageFile.name}`);
+    try {
+        const snapshot = await uploadBytes(storageRef, imageFile);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        return downloadURL;
+    } catch (e) {
+        console.error("Error uploading image: ", e);
+        throw new Error("Could not upload image.");
     }
 }
 

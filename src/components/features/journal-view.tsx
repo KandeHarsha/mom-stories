@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { BookHeart, ImagePlus, Mic, Loader2 } from 'lucide-react';
+import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { saveJournalEntryAction } from '@/app/actions';
@@ -27,13 +27,15 @@ export default function JournalView() {
   const [isSaving, startSaveTransition] = useTransition();
   const [isLoading, startLoadingTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState('entries');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const fetchEntries = () => {
     startLoadingTransition(async () => {
       try {
-        // Using a dummy user ID as per current implementation
         const fetchedEntries = await getJournalEntries('dummy-user-id');
         setEntries(fetchedEntries);
       } catch (error) {
@@ -52,6 +54,30 @@ export default function JournalView() {
     }
   }, [activeTab]);
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setSelectedFile(file);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setPreviewUrl(null);
+    }
+  };
+
+  const handleRemoveFile = () => {
+      setSelectedFile(null);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+      if(fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+  }
+
   const handleSave = (formData: FormData) => {
     startSaveTransition(async () => {
       const result = await saveJournalEntryAction(formData);
@@ -67,7 +93,8 @@ export default function JournalView() {
           description: 'Your journal entry has been saved successfully.',
         });
         formRef.current?.reset();
-        fetchEntries(); // Refetch entries to show the new one
+        handleRemoveFile();
+        fetchEntries();
         setActiveTab('entries');
       }
     });
@@ -99,13 +126,13 @@ export default function JournalView() {
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {entries.map(entry => (
                             <Card key={entry.id} className="flex flex-col">
+                                {entry.imageUrl && <div className="aspect-video relative"><Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="journal entry"/></div>}
                                 <CardHeader>
                                     <CardTitle>{entry.title}</CardTitle>
                                     <CardDescription>{entry.createdAt}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow">
-                                    {entry.imageUrl && <div className="mb-4 rounded-lg overflow-hidden"><Image src={entry.imageUrl} alt={entry.title} width={600} height={400} data-ai-hint="journal entry"/></div>}
-                                    <p className="text-sm text-muted-foreground">{entry.content}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
                                 </CardContent>
                                 {entry.tags && entry.tags.length > 0 && (
                                     <CardFooter className="flex-wrap gap-2">
@@ -141,13 +168,13 @@ export default function JournalView() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                <div className="space-y-2">
                                    <Label htmlFor="picture">Add a photo</Label>
-                                   <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                                     <label htmlFor="picture" className="cursor-pointer">
-                                       <ImagePlus className="h-5 w-5"/>
-                                       <span>Upload Image</span>
-                                     </label>
-                                   </Button>
-                                   <Input id="picture" name="picture" type="file" className="hidden" />
+                                    <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                                      <label htmlFor="picture" className="cursor-pointer">
+                                        <ImagePlus className="h-5 w-5"/>
+                                        <span>{selectedFile ? 'Change photo' : 'Upload photo'}</span>
+                                      </label>
+                                    </Button>
+                                   <Input id="picture" name="picture" type="file" className="hidden" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
                                </div>
                                <div className="space-y-2">
                                    <Label>Record a voice note</Label>
@@ -157,6 +184,22 @@ export default function JournalView() {
                                    </Button>
                                </div>
                             </div>
+                            {previewUrl && selectedFile && (
+                                <div className="space-y-2">
+                                    <Label>Photo Preview</Label>
+                                    <div className="relative group">
+                                      <Image src={previewUrl} alt="Preview" width={400} height={400} className="rounded-lg w-full h-auto object-cover"/>
+                                      <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-50 group-hover:opacity-100 transition-opacity" onClick={handleRemoveFile}>
+                                        <X className="h-4 w-4"/>
+                                      </Button>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground border rounded-md p-2">
+                                      <Paperclip className="h-4 w-4"/>
+                                      <span>{selectedFile.name}</span>
+                                      <span className="ml-auto">{Math.round(selectedFile.size / 1024)} KB</span>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                         <CardFooter>
                             <Button type="submit" disabled={isSaving} className="w-full">

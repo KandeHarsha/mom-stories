@@ -5,6 +5,7 @@
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
+import { uploadImageAndGetURL } from '@/services/journal-service';
 import { z } from 'zod';
 
 const promptSchema = z.object({
@@ -64,11 +65,24 @@ const journalEntrySchema = z.object({
 });
 
 export async function saveJournalEntryAction(formData: FormData) {
+    const DUMMY_USER_ID = 'dummy-user-id';
+    
+    const imageFile = formData.get('picture') as File;
+    let imageUrl: string | undefined = undefined;
+
+    if (imageFile && imageFile.size > 0) {
+        try {
+            imageUrl = await uploadImageAndGetURL(imageFile, DUMMY_USER_ID);
+        } catch (e) {
+            return { error: 'Failed to upload image. Please try again later.' };
+        }
+    }
+
     const rawData = {
         title: formData.get('title'),
         content: formData.get('content'),
-        // Using a dummy user ID for now, as requested.
-        userId: 'dummy-user-id',
+        userId: DUMMY_USER_ID,
+        imageUrl: imageUrl,
     };
 
     const validatedInput = journalEntrySchema.safeParse(rawData);
