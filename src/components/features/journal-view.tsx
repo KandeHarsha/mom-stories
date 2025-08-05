@@ -1,3 +1,4 @@
+
 // src/components/features/journal-view.tsx
 'use client';
 
@@ -16,11 +17,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X } from 'lucide-react';
+import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { saveJournalEntryAction } from '@/app/actions';
 import { getJournalEntries, type JournalEntry } from '@/services/journal-service';
+import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function JournalView() {
   const { toast } = useToast();
@@ -30,8 +33,18 @@ export default function JournalView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState('entries');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  
+  // Image state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Audio state
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [micPermission, setMicPermission] = useState<boolean | null>(null);
 
   const fetchEntries = () => {
     startLoadingTransition(async () => {
@@ -78,7 +91,56 @@ export default function JournalView() {
       }
   }
 
+  const handleStartRecording = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicPermission(true);
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+
+        mediaRecorderRef.current.ondataavailable = (event) => {
+            audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorderRef.current.onstop = () => {
+            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            setAudioBlob(blob);
+            const url = URL.createObjectURL(blob);
+            setAudioUrl(url);
+        };
+
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+    } catch (err) {
+        console.error("Error accessing microphone:", err);
+        setMicPermission(false);
+        toast({
+            variant: "destructive",
+            title: "Microphone Access Denied",
+            description: "Please enable microphone permissions in your browser settings.",
+        });
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleRemoveAudio = () => {
+    setAudioBlob(null);
+    if(audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+    }
+  }
+
   const handleSave = (formData: FormData) => {
+    if(audioBlob){
+      formData.append('voiceNote', audioBlob, 'voice-note.webm');
+    }
     startSaveTransition(async () => {
       const result = await saveJournalEntryAction(formData);
       if (result.error) {
@@ -94,6 +156,7 @@ export default function JournalView() {
         });
         formRef.current?.reset();
         handleRemoveFile();
+        handleRemoveAudio();
         fetchEntries();
         setActiveTab('entries');
       }
@@ -131,8 +194,13 @@ export default function JournalView() {
                                     <CardTitle>{entry.title}</CardTitle>
                                     <CardDescription>{entry.createdAt}</CardDescription>
                                 </CardHeader>
-                                <CardContent className="flex-grow">
+                                <CardContent className="flex-grow space-y-4">
                                     <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
+                                     {entry.voiceNoteUrl && (
+                                        <audio controls src={entry.voiceNoteUrl} className="w-full">
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    )}
                                 </CardContent>
                                 {entry.tags && entry.tags.length > 0 && (
                                     <CardFooter className="flex-wrap gap-2">
@@ -178,12 +246,28 @@ export default function JournalView() {
                                </div>
                                <div className="space-y-2">
                                    <Label>Record a voice note</Label>
-                                   <Button variant="outline" className="w-full justify-start gap-2" disabled>
+                                   {isRecording ? (
+                                    <Button variant="destructive" className="w-full justify-start gap-2" onClick={handleStopRecording} type="button">
+                                       <Square className="h-5 w-5"/>
+                                       <span>Stop Recording</span>
+                                   </Button>
+                                   ) : (
+                                   <Button variant="outline" className="w-full justify-start gap-2" onClick={handleStartRecording} type="button">
                                        <Mic className="h-5 w-5"/>
                                        <span>Start Recording</span>
                                    </Button>
+                                   )}
                                </div>
                             </div>
+                             {micPermission === false && (
+                                <Alert variant="destructive">
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Microphone Access Denied</AlertTitle>
+                                    <AlertDescription>
+                                        To record a voice note, please enable microphone permissions in your browser settings and refresh the page.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
                             {previewUrl && selectedFile && (
                                 <div className="space-y-2">
                                     <Label>Photo Preview</Label>
@@ -197,6 +281,17 @@ export default function JournalView() {
                                       <Paperclip className="h-4 w-4"/>
                                       <span>{selectedFile.name}</span>
                                       <span className="ml-auto">{Math.round(selectedFile.size / 1024)} KB</span>
+                                    </div>
+                                </div>
+                            )}
+                             {audioUrl && (
+                                <div className="space-y-2">
+                                    <Label>Voice Note Preview</Label>
+                                    <div className="relative group">
+                                        <audio src={audioUrl} controls className="w-full" />
+                                        <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-50 group-hover:opacity-100 transition-opacity" onClick={handleRemoveAudio}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 </div>
                             )}

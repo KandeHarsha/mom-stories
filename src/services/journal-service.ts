@@ -11,6 +11,7 @@ export interface JournalEntry {
     content: string;
     createdAt: any; // Can be Timestamp on read, FieldValue on write
     imageUrl?: string;
+    voiceNoteUrl?: string;
     tags?: string[];
 }
 
@@ -18,7 +19,7 @@ export interface JournalEntryData extends Omit<JournalEntry, 'id' | 'createdAt'>
     createdAt: Timestamp;
 }
 
-export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdAt'>) {
+export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdAt' | 'voiceNoteUrl'> & { voiceNoteUrl?: string }) {
     try {
         const docRef = await addDoc(collection(db, 'journalEntries'), {
             ...entry,
@@ -31,20 +32,21 @@ export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdA
     }
 }
 
-export async function uploadImageAndGetURL(imageBuffer: ArrayBuffer, fileName: string, userId: string): Promise<string> {
-    if (!imageBuffer) {
-        throw new Error("No image data provided.");
+export async function uploadFileAndGetURL(fileBuffer: ArrayBuffer, fileName: string, userId: string, folder: string): Promise<string> {
+    if (!fileBuffer) {
+        throw new Error("No file data provided.");
     }
-    const storageRef = ref(storage, `journal-images/${userId}/${Date.now()}-${fileName}`);
+    const storageRef = ref(storage, `${folder}/${userId}/${Date.now()}-${fileName}`);
     try {
-        const snapshot = await uploadBytes(storageRef, imageBuffer);
+        const snapshot = await uploadBytes(storageRef, fileBuffer);
         const downloadURL = await getDownloadURL(snapshot.ref);
         return downloadURL;
     } catch (e) {
-        console.error("Error uploading image: ", e);
-        throw new Error("Could not upload image.");
+        console.error("Error uploading file: ", e);
+        throw new Error("Could not upload file.");
     }
 }
+
 
 export async function getJournalEntries(userId: string): Promise<JournalEntry[]> {
     try {

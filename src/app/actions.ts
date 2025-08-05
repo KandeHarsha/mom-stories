@@ -5,7 +5,7 @@
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
-import { uploadImageAndGetURL } from '@/services/journal-service';
+import { uploadFileAndGetURL } from '@/services/journal-service';
 import { z } from 'zod';
 
 const promptSchema = z.object({
@@ -61,6 +61,7 @@ const journalEntrySchema = z.object({
     content: z.string().min(1, 'Content is required.'),
     userId: z.string(),
     imageUrl: z.string().optional(),
+    voiceNoteUrl: z.string().optional(),
     tags: z.array(z.string()).optional(),
 });
 
@@ -73,11 +74,25 @@ export async function saveJournalEntryAction(formData: FormData) {
     if (imageFile && imageFile.size > 0) {
         try {
             const imageBuffer = await imageFile.arrayBuffer();
-            imageUrl = await uploadImageAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID);
+            imageUrl = await uploadFileAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID, 'journal-images');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Upload error in action:", errorMessage);
             return { error: 'Failed to upload image. Please try again later.' };
+        }
+    }
+
+    const voiceNoteFile = formData.get('voiceNote') as File;
+    let voiceNoteUrl: string | undefined = undefined;
+
+    if (voiceNoteFile && voiceNoteFile.size > 0) {
+        try {
+            const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
+            voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, voiceNoteFile.name, DUMMY_USER_ID, 'journal-voice-notes');
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+            console.error("Voice note upload error in action:", errorMessage);
+            return { error: 'Failed to upload voice note. Please try again later.' };
         }
     }
 
@@ -86,6 +101,7 @@ export async function saveJournalEntryAction(formData: FormData) {
         content: formData.get('content'),
         userId: DUMMY_USER_ID,
         imageUrl: imageUrl,
+        voiceNoteUrl: voiceNoteUrl,
     };
 
     const validatedInput = journalEntrySchema.safeParse(rawData);
