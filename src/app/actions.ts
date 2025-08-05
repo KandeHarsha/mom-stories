@@ -5,8 +5,8 @@
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
-import { uploadFileAndGetURL, type JournalEntryData } from '@/services/journal-service';
-import { getUserProfile, updateUserProfile } from '@/services/user-service';
+import { uploadFileAndGetURL } from '@/services/journal-service';
+import { getUserProfile, updateUserProfile, type UserProfile } from '@/services/user-service';
 import { z } from 'zod';
 
 const DUMMY_USER_ID = 'dummy-user-id'; // Use a consistent dummy user ID
@@ -59,18 +59,14 @@ export async function getSupportAnswer(formData: FormData) {
   }
 }
 
-const journalEntrySchema = z.object({
-    title: z.string().min(1, 'Title is required.'),
-    content: z.string().min(1, 'Content is required.'),
-    userId: z.string(),
-    imageUrl: z.string().optional(),
-    voiceNoteUrl: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-});
-
 export async function saveJournalEntryAction(formData: FormData) {
-    
-    const dataToSave: Omit<JournalEntryData, 'createdAt'> = {
+    const dataToSave: {
+        title: string;
+        content: string;
+        userId: string;
+        imageUrl?: string;
+        voiceNoteUrl?: string;
+    } = {
         title: formData.get('title') as string,
         content: formData.get('content') as string,
         userId: DUMMY_USER_ID,
@@ -100,14 +96,8 @@ export async function saveJournalEntryAction(formData: FormData) {
         }
     }
 
-    const validatedInput = journalEntrySchema.safeParse(dataToSave);
-
-    if (!validatedInput.success) {
-        return { error: validatedInput.error.errors.map(e => e.message).join(', ') };
-    }
-
     try {
-        await saveJournalEntry(validatedInput.data);
+        await saveJournalEntry(dataToSave);
         return { success: true };
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
@@ -127,16 +117,19 @@ export async function getUserProfileAction() {
     }
 }
 
-const phaseSchema = z.string().min(1, 'Phase cannot be empty');
+const profileUpdateSchema = z.object({
+    name: z.string().min(1, 'Name cannot be empty.'),
+    phase: z.string().min(1, 'Phase cannot be empty'),
+});
 
-export async function updateUserPhaseAction(phase: string) {
-    const validatedPhase = phaseSchema.safeParse(phase);
-     if (!validatedPhase.success) {
-        return { error: validatedPhase.error.errors.map(e => e.message).join(', ') };
+export async function updateUserProfileAction(data: {name: string, phase: string}) {
+    const validatedData = profileUpdateSchema.safeParse(data);
+     if (!validatedData.success) {
+        return { error: validatedData.error.errors.map(e => e.message).join(', ') };
     }
 
     try {
-        await updateUserProfile(DUMMY_USER_ID, { phase: validatedPhase.data as any });
+        await updateUserProfile(DUMMY_USER_ID, { name: validatedData.data.name, phase: validatedData.data.phase as any });
         return { success: true };
     } catch(e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
