@@ -68,9 +68,8 @@ const journalEntrySchema = z.object({
 export async function saveJournalEntryAction(formData: FormData) {
     const DUMMY_USER_ID = 'dummy-user-id';
     
-    const imageFile = formData.get('picture') as File;
     let imageUrl: string | undefined = undefined;
-
+    const imageFile = formData.get('picture') as File;
     if (imageFile && imageFile.size > 0) {
         try {
             const imageBuffer = await imageFile.arrayBuffer();
@@ -82,9 +81,8 @@ export async function saveJournalEntryAction(formData: FormData) {
         }
     }
 
-    const voiceNoteFile = formData.get('voiceNote') as File;
     let voiceNoteUrl: string | undefined = undefined;
-
+    const voiceNoteFile = formData.get('voiceNote') as File;
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
@@ -97,11 +95,11 @@ export async function saveJournalEntryAction(formData: FormData) {
     }
 
     const rawData = {
-        title: formData.get('title'),
-        content: formData.get('content'),
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
         userId: DUMMY_USER_ID,
-        imageUrl: imageUrl,
-        voiceNoteUrl: voiceNoteUrl,
+        imageUrl,
+        voiceNoteUrl,
     };
 
     const validatedInput = journalEntrySchema.safeParse(rawData);
