@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfileAction, updateUserPhaseAction } from '@/app/actions';
-import { Loader2, User } from 'lucide-react';
+import { Loader2, User, Mail } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type UserProfile } from '@/services/user-service';
 
 const motherhoodStages = [
     { value: 'preparation', label: 'Preparation / Trying to Conceive' },
@@ -23,16 +24,16 @@ export default function ProfileView() {
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [isLoading, startLoadingTransition] = useTransition();
-    const [currentPhase, setCurrentPhase] = useState<string>('');
+    const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedPhase, setSelectedPhase] = useState<string>('');
 
     useEffect(() => {
         startLoadingTransition(async () => {
             try {
-                const profile = await getUserProfileAction();
-                if (profile && profile.phase) {
-                    setCurrentPhase(profile.phase);
-                    setSelectedPhase(profile.phase);
+                const fetchedProfile = await getUserProfileAction();
+                if (fetchedProfile) {
+                    setProfile(fetchedProfile as UserProfile);
+                    setSelectedPhase(fetchedProfile.phase || '');
                 }
             } catch (error) {
                 toast({
@@ -45,7 +46,7 @@ export default function ProfileView() {
     }, [toast]);
 
     const handleSave = () => {
-        if (!selectedPhase || selectedPhase === currentPhase) return;
+        if (!selectedPhase || !profile || selectedPhase === profile.phase) return;
         startTransition(async () => {
             const result = await updateUserPhaseAction(selectedPhase);
             if (result.error) {
@@ -55,7 +56,7 @@ export default function ProfileView() {
                     description: result.error,
                 });
             } else if (result.success) {
-                setCurrentPhase(selectedPhase);
+                setProfile(prev => prev ? { ...prev, phase: selectedPhase as any } : null);
                 toast({
                     title: 'Profile Updated!',
                     description: 'Your stage of motherhood has been updated.',
@@ -73,33 +74,39 @@ export default function ProfileView() {
             <div className="mb-6">
                 <h2 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-2">
                     <User className="h-8 w-8 text-primary"/>
-                    Your Profile
+                    {isLoading ? <Skeleton className="h-8 w-48" /> : `${profile?.name || 'User'}'s Profile`}
                 </h2>
                 <p className="text-muted-foreground mt-1">Manage your personal information and preferences.</p>
             </div>
             <Card className="max-w-xl mx-auto">
                 <CardHeader>
-                    <CardTitle>Stage of Motherhood</CardTitle>
+                    <CardTitle>Your Details</CardTitle>
                     <CardDescription>
                         Keeping this up-to-date helps us personalize your experience.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {isLoading ? (
-                        <div className="space-y-2">
-                            <Label>Current Stage</Label>
+                        <div className="space-y-4">
+                            <Skeleton className="h-8 w-1/3" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-8 w-1/3" />
                             <Skeleton className="h-10 w-full" />
                         </div>
-
-                    ) : (
+                    ) : profile ? (
                         <div className="space-y-4">
                             <div>
+                                <Label>Email Address</Label>
+                                <p className="text-md flex items-center gap-2 text-muted-foreground"><Mail className="h-4 w-4"/>{profile.email}</p>
+                            </div>
+                            <hr />
+                             <div>
                                 <Label>Current Stage</Label>
-                                <p className="text-lg font-semibold text-primary">{getPhaseLabel(currentPhase)}</p>
+                                <p className="text-lg font-semibold text-primary">{getPhaseLabel(profile.phase)}</p>
                             </div>
                             <div>
                                 <Label htmlFor="stage">Update Your Stage</Label>
-                                <Select onValueChange={setSelectedPhase} defaultValue={currentPhase}>
+                                <Select onValueChange={setSelectedPhase} defaultValue={profile.phase}>
                                     <SelectTrigger id="stage">
                                         <SelectValue placeholder="Select your current stage" />
                                     </SelectTrigger>
@@ -112,7 +119,7 @@ export default function ProfileView() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                             <Button onClick={handleSave} disabled={isPending || selectedPhase === currentPhase}>
+                             <Button onClick={handleSave} disabled={isPending || selectedPhase === profile.phase}>
                                 {isPending ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -123,6 +130,8 @@ export default function ProfileView() {
                                 )}
                             </Button>
                         </div>
+                    ) : (
+                        <p>Could not load profile.</p>
                     )}
                 </CardContent>
             </Card>

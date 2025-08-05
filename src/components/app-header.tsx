@@ -75,8 +75,8 @@ function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://placehold.co/40x40" alt="@mom" />
-            <AvatarFallback>M</AvatarFallback>
+            <AvatarImage src="https://placehold.co/40x40" alt="@mom" data-ai-hint="woman mother" />
+            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

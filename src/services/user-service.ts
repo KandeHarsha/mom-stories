@@ -5,6 +5,8 @@ import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firest
 
 export interface UserProfile {
     id: string;
+    name: string;
+    email: string;
     phase: 'preparation' | 'pregnancy' | 'fourth-trimester' | 'beyond' | '';
     updatedAt: any;
 }
@@ -19,13 +21,20 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             // Convert Timestamp to a serializable format (ISO string)
             const profileData = {
                 id: docSnap.id,
+                name: data.name || 'Mother', // fallback for existing profiles
+                email: data.email || 'mom@example.com', // fallback for existing profiles
                 ...data,
                 updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
             } as UserProfile;
             return profileData;
         } else {
             // Optionally, create a default profile
-            const defaultProfile = { phase: '', updatedAt: serverTimestamp() };
+            const defaultProfile = { 
+                name: 'Mother',
+                email: 'mom@example.com',
+                phase: '', 
+                updatedAt: serverTimestamp() 
+            };
             await setDoc(docRef, defaultProfile);
             return { id: userId, ...defaultProfile, updatedAt: new Date().toISOString() };
         }
