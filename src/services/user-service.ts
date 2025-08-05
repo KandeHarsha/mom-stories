@@ -1,7 +1,7 @@
 
 // src/services/user-service.ts
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 export interface UserProfile {
     id: string;
@@ -15,12 +15,19 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as UserProfile;
+            const data = docSnap.data();
+            // Convert Timestamp to a serializable format (ISO string)
+            const profileData = {
+                id: docSnap.id,
+                ...data,
+                updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+            } as UserProfile;
+            return profileData;
         } else {
             // Optionally, create a default profile
             const defaultProfile = { phase: '', updatedAt: serverTimestamp() };
             await setDoc(docRef, defaultProfile);
-            return { id: userId, ...defaultProfile };
+            return { id: userId, ...defaultProfile, updatedAt: new Date().toISOString() };
         }
     } catch (e) {
         console.error("Error getting user profile: ", e);
