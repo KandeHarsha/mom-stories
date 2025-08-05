@@ -6,7 +6,7 @@
  * - SaveJournalEntryInput - The input type for the saveJournalEntry function.
  */
 
-import { addJournalEntry } from '@/services/journal-service';
+import { addJournalEntry, type JournalEntry } from '@/services/journal-service';
 import { z } from 'zod';
 
 const SaveJournalEntryInputSchema = z.object({
@@ -14,6 +14,7 @@ const SaveJournalEntryInputSchema = z.object({
   title: z.string(),
   content: z.string(),
   imageUrl: z.string().optional(),
+  voiceNoteUrl: z.string().optional(),
   tags: z.array(z.string()).optional(),
 });
 

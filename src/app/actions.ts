@@ -68,12 +68,24 @@ const journalEntrySchema = z.object({
 export async function saveJournalEntryAction(formData: FormData) {
     const DUMMY_USER_ID = 'dummy-user-id';
     
-    let imageUrl: string | undefined = undefined;
+    const dataToSave: {
+        title: string;
+        content: string;
+        userId: string;
+        imageUrl?: string;
+        voiceNoteUrl?: string;
+        tags?: string[];
+    } = {
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
+        userId: DUMMY_USER_ID,
+    };
+
     const imageFile = formData.get('picture') as File;
     if (imageFile && imageFile.size > 0) {
         try {
             const imageBuffer = await imageFile.arrayBuffer();
-            imageUrl = await uploadFileAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID, 'journal-images');
+            dataToSave.imageUrl = await uploadFileAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID, 'journal-images');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Upload error in action:", errorMessage);
@@ -81,12 +93,11 @@ export async function saveJournalEntryAction(formData: FormData) {
         }
     }
 
-    let voiceNoteUrl: string | undefined = undefined;
     const voiceNoteFile = formData.get('voiceNote') as File;
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, voiceNoteFile.name, DUMMY_USER_ID, 'journal-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, voiceNoteFile.name, DUMMY_USER_ID, 'journal-voice-notes');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Voice note upload error in action:", errorMessage);
@@ -94,15 +105,7 @@ export async function saveJournalEntryAction(formData: FormData) {
         }
     }
 
-    const rawData = {
-        title: formData.get('title') as string,
-        content: formData.get('content') as string,
-        userId: DUMMY_USER_ID,
-        imageUrl,
-        voiceNoteUrl,
-    };
-
-    const validatedInput = journalEntrySchema.safeParse(rawData);
+    const validatedInput = journalEntrySchema.safeParse(dataToSave);
 
     if (!validatedInput.success) {
         return { error: validatedInput.error.errors.map(e => e.message).join(', ') };
@@ -112,6 +115,8 @@ export async function saveJournalEntryAction(formData: FormData) {
         await saveJournalEntry(validatedInput.data);
         return { success: true };
     } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+        console.error("Save error in action:", errorMessage);
         return { error: 'Failed to save journal entry. Please try again later.' };
     }
 }
