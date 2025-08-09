@@ -11,18 +11,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle } from 'lucide-react';
+import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { saveJournalEntryAction } from '@/app/actions';
 import { getJournalEntries, type JournalEntry } from '@/services/journal-service';
-import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function JournalView() {
@@ -31,8 +39,8 @@ export default function JournalView() {
   const [isLoading, startLoadingTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState('entries');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [isNewEntryOpen, setIsNewEntryOpen] = useState(false);
   
   // Image state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -62,10 +70,8 @@ export default function JournalView() {
   };
 
   useEffect(() => {
-    if (activeTab === 'entries') {
-      fetchEntries();
-    }
-  }, [activeTab]);
+    fetchEntries();
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
@@ -137,6 +143,14 @@ export default function JournalView() {
     }
   }
 
+  const resetForm = () => {
+    formRef.current?.reset();
+    handleRemoveFile();
+    handleRemoveAudio();
+    setIsRecording(false);
+    setMicPermission(null);
+  };
+
   const handleSave = (formData: FormData) => {
     if(audioBlob){
       formData.append('voiceNote', audioBlob, 'voice-note.webm');
@@ -154,77 +168,39 @@ export default function JournalView() {
           title: 'Entry Saved!',
           description: 'Your journal entry has been saved successfully.',
         });
-        formRef.current?.reset();
-        handleRemoveFile();
-        handleRemoveAudio();
+        resetForm();
         fetchEntries();
-        setActiveTab('entries');
+        setIsNewEntryOpen(false); // Close the dialog
       }
     });
   };
 
   return (
     <div>
-        <div className="mb-6">
-            <h2 className="text-3xl font-bold font-headline tracking-tight">Your Private Journal</h2>
-            <p className="text-muted-foreground mt-1">A safe space to capture every moment, thought, and feeling.</p>
-        </div>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-                <TabsTrigger value="entries">My Entries</TabsTrigger>
-                <TabsTrigger value="new">New Entry</TabsTrigger>
-            </TabsList>
-            <TabsContent value="entries" className="mt-6">
-                 {isLoading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                 ) : entries.length === 0 ? (
-                    <Card className="flex flex-col items-center justify-center h-64 text-center p-6">
-                        <BookHeart className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h3 className="text-xl font-semibold">Your Journal is Empty</h3>
-                        <p className="text-muted-foreground mt-2">Click on the "New Entry" tab to write your first memory.</p>
-                    </Card>
-                 ) : (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {entries.map(entry => (
-                            <Card key={entry.id} className="flex flex-col">
-                                {entry.imageUrl && <div className="aspect-video relative"><Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="journal entry"/></div>}
-                                <CardHeader>
-                                    <CardTitle>{entry.title}</CardTitle>
-                                    <CardDescription>{entry.createdAt}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex-grow space-y-4">
-                                    <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
-                                     {entry.voiceNoteUrl && (
-                                        <audio controls src={entry.voiceNoteUrl} className="w-full">
-                                            Your browser does not support the audio element.
-                                        </audio>
-                                    )}
-                                </CardContent>
-                                {entry.tags && entry.tags.length > 0 && (
-                                    <CardFooter className="flex-wrap gap-2">
-                                        {entry.tags.map(tag => (
-                                            <Badge key={tag} variant="secondary">{tag}</Badge>
-                                        ))}
-                                    </CardFooter>
-                                )}
-                            </Card>
-                        ))}
-                    </div>
-                 )}
-            </TabsContent>
-            <TabsContent value="new" className="mt-6">
-                <Card className="max-w-2xl mx-auto">
-                    <form action={handleSave} ref={formRef}>
-                        <CardHeader>
-                             <CardTitle className="flex items-center gap-2">
-                               <BookHeart className="h-6 w-6 text-primary"/>
-                               Create a New Journal Entry
-                             </CardTitle>
-                             <CardDescription>What's on your mind and in your heart today?</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
+        <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold font-headline tracking-tight">Your Private Journal</h2>
+              <p className="text-muted-foreground mt-1">A safe space to capture every moment, thought, and feeling.</p>
+            </div>
+            <Dialog open={isNewEntryOpen} onOpenChange={setIsNewEntryOpen}>
+                <DialogTrigger asChild>
+                    <Button>
+                        <PlusCircle className="mr-2"/>
+                        New Entry
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[625px]">
+                     <form action={handleSave} ref={formRef}>
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <BookHeart className="h-6 w-6 text-primary"/>
+                                Create a New Journal Entry
+                            </DialogTitle>
+                            <DialogDescription>
+                                What's on your mind and in your heart today? Click save when you're done.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-6">
                             <div className="space-y-2">
                                <Label htmlFor="title">Title</Label>
                                <Input id="title" name="title" placeholder="e.g., A special moment, a worry, a dream..." required/>
@@ -295,9 +271,14 @@ export default function JournalView() {
                                     </div>
                                 </div>
                             )}
-                        </CardContent>
-                        <CardFooter>
-                            <Button type="submit" disabled={isSaving} className="w-full">
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary" onClick={resetForm}>
+                                    Cancel
+                                </Button>
+                            </DialogClose>
+                            <Button type="submit" disabled={isSaving}>
                                 {isSaving ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -307,11 +288,52 @@ export default function JournalView() {
                                     'Save Entry'
                                 )}
                             </Button>
-                        </CardFooter>
+                        </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+        </div>
+        
+        <div className="mt-6">
+            {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : entries.length === 0 ? (
+                <Card className="flex flex-col items-center justify-center h-64 text-center p-6">
+                    <BookHeart className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold">Your Journal is Empty</h3>
+                    <p className="text-muted-foreground mt-2">Click on the "New Entry" button to write your first memory.</p>
                 </Card>
-            </TabsContent>
-        </Tabs>
+            ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {entries.map(entry => (
+                        <Card key={entry.id} className="flex flex-col">
+                            {entry.imageUrl && <div className="aspect-video relative"><Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="journal entry"/></div>}
+                            <CardHeader>
+                                <CardTitle>{entry.title}</CardTitle>
+                                <CardDescription>{entry.createdAt}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow space-y-4">
+                                <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
+                                 {entry.voiceNoteUrl && (
+                                    <audio controls src={entry.voiceNoteUrl} className="w-full">
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                )}
+                            </CardContent>
+                            {entry.tags && entry.tags.length > 0 && (
+                                <CardFooter className="flex-wrap gap-2">
+                                    {entry.tags.map(tag => (
+                                        <Badge key={tag} variant="secondary">{tag}</Badge>
+                                    ))}
+                                </CardFooter>
+                            )}
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
     </div>
   );
 }
