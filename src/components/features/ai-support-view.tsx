@@ -1,7 +1,9 @@
+// src/components/features/ai-support-view.tsx
 'use client';
 
-import React, { useState, useRef, useEffect, useTransition } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import React, { useState, useRef, useEffect, useTransition, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,7 +18,10 @@ interface Message {
   sender: 'user' | 'ai';
 }
 
-export default function AiSupportView() {
+function AiSupportComponent() {
+  const searchParams = useSearchParams();
+  const initialQuestion = searchParams.get('question');
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -29,19 +34,15 @@ export default function AiSupportView() {
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isPending) return;
-
+  const fetchAnswer = (question: string) => {
     const newMessages: Message[] = [
       ...messages,
-      { id: Date.now(), text: input, sender: 'user' },
+      { id: Date.now(), text: question, sender: 'user' },
     ];
     setMessages(newMessages);
 
     const formData = new FormData();
-    formData.append('question', input);
-    setInput('');
+    formData.append('question', question);
 
     startTransition(async () => {
       const result = await getSupportAnswer(formData);
@@ -51,14 +52,30 @@ export default function AiSupportView() {
           title: 'Error',
           description: result.error,
         });
-        setMessages(newMessages); // Revert optimistic update
+        // Revert optimistic update on error
+        setMessages(messages); 
       } else if (result.answer) {
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, text: result.answer, sender: 'ai' },
+          { id: Date.now() + 1, text: result.answer!, sender: 'ai' },
         ]);
       }
     });
+  };
+
+  useEffect(() => {
+    if (initialQuestion) {
+      // Use a timeout to ensure the state has settled from the initial render
+      setTimeout(() => fetchAnswer(initialQuestion), 0);
+    }
+  }, [initialQuestion]);
+
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim() || isPending) return;
+    fetchAnswer(input);
+    setInput('');
   };
 
   useEffect(() => {
@@ -152,4 +169,12 @@ export default function AiSupportView() {
         </div>
     </div>
   );
+}
+
+export default function AiSupportView() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AiSupportComponent />
+        </Suspense>
+    )
 }
