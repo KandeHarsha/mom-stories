@@ -5,6 +5,7 @@
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
+import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
 import { uploadFileAndGetURL } from '@/services/journal-service';
 import { getUserProfile, updateUserProfile, type UserProfile } from '@/services/user-service';
 import { z } from 'zod';
@@ -103,6 +104,20 @@ export async function saveJournalEntryAction(formData: FormData) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
         console.error("Save error in action:", errorMessage);
         return { error: 'Failed to save journal entry. Please try again later.' };
+    }
+}
+
+export async function deleteJournalEntryAction(entryId: string) {
+    if (!entryId) {
+        return { error: 'Entry ID is required.' };
+    }
+    try {
+        await deleteJournalEntry(entryId);
+        return { success: true };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+        console.error("Delete error in action:", errorMessage);
+        return { error: 'Failed to delete journal entry. Please try again later.' };
     }
 }
 

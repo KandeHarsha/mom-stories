@@ -1,7 +1,7 @@
 
 // src/services/journal-service.ts
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export interface JournalEntry {
@@ -29,6 +29,15 @@ export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdA
     } catch (e) {
         console.error("Error adding document: ", e);
         throw new Error('Could not save journal entry.');
+    }
+}
+
+export async function deleteJournalEntry(entryId: string): Promise<void> {
+    try {
+        await deleteDoc(doc(db, 'journalEntries', entryId));
+    } catch (e) {
+        console.error("Error deleting document: ", e);
+        throw new Error('Could not delete journal entry.');
     }
 }
 

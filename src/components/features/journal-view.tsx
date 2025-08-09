@@ -21,15 +21,26 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle } from 'lucide-react';
+import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { saveJournalEntryAction } from '@/app/actions';
+import { saveJournalEntryAction, deleteJournalEntryAction } from '@/app/actions';
 import { getJournalEntries, type JournalEntry } from '@/services/journal-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -37,10 +48,12 @@ export default function JournalView() {
   const { toast } = useToast();
   const [isSaving, startSaveTransition] = useTransition();
   const [isLoading, startLoadingTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isNewEntryOpen, setIsNewEntryOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   
   // Image state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -175,6 +188,26 @@ export default function JournalView() {
     });
   };
 
+  const handleDelete = (entryId: string) => {
+    startDeleteTransition(async () => {
+        const result = await deleteJournalEntryAction(entryId);
+        if (result.error) {
+            toast({
+                variant: 'destructive',
+                title: 'Oh no! Something went wrong.',
+                description: result.error,
+            });
+        } else {
+            toast({
+                title: 'Entry Deleted',
+                description: 'Your journal entry has been deleted.',
+            });
+            fetchEntries();
+            setSelectedEntry(null);
+        }
+    });
+  }
+
   return (
     <div>
         <div className="mb-6 flex items-center justify-between">
@@ -308,28 +341,81 @@ export default function JournalView() {
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {entries.map(entry => (
-                        <Card key={entry.id} className="flex flex-col">
-                            {entry.imageUrl && <div className="aspect-video relative"><Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="journal entry"/></div>}
-                            <CardHeader>
-                                <CardTitle>{entry.title}</CardTitle>
-                                <CardDescription>{entry.createdAt}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow space-y-4">
-                                <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
-                                 {entry.voiceNoteUrl && (
-                                    <audio controls src={entry.voiceNoteUrl} className="w-full">
-                                        Your browser does not support the audio element.
-                                    </audio>
-                                )}
-                            </CardContent>
-                            {entry.tags && entry.tags.length > 0 && (
-                                <CardFooter className="flex-wrap gap-2">
-                                    {entry.tags.map(tag => (
-                                        <Badge key={tag} variant="secondary">{tag}</Badge>
-                                    ))}
-                                </CardFooter>
-                            )}
-                        </Card>
+                        <Dialog key={entry.id}>
+                            <DialogTrigger asChild>
+                                <Card className="flex flex-col cursor-pointer hover:shadow-lg transition-shadow">
+                                    {entry.imageUrl && <div className="aspect-video relative"><Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="journal entry"/></div>}
+                                    <CardHeader>
+                                        <CardTitle>{entry.title}</CardTitle>
+                                        <CardDescription>{entry.createdAt}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow space-y-4">
+                                        <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
+                                        {entry.voiceNoteUrl && (
+                                            <audio controls src={entry.voiceNoteUrl} className="w-full" onClick={(e) => e.stopPropagation()}>
+                                                Your browser does not support the audio element.
+                                            </audio>
+                                        )}
+                                    </CardContent>
+                                    {entry.tags && entry.tags.length > 0 && (
+                                        <CardFooter className="flex-wrap gap-2">
+                                            {entry.tags.map(tag => (
+                                                <Badge key={tag} variant="secondary">{tag}</Badge>
+                                            ))}
+                                        </CardFooter>
+                                    )}
+                                </Card>
+                            </DialogTrigger>
+                             <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+                                <DialogHeader>
+                                    <DialogTitle>{entry.title}</DialogTitle>
+                                    <DialogDescription>{entry.createdAt}</DialogDescription>
+                                </DialogHeader>
+                                <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-4">
+                                    {entry.imageUrl && (
+                                        <div className="relative aspect-video">
+                                            <Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="contain" className="rounded-lg" />
+                                        </div>
+                                    )}
+                                    <p className="text-sm whitespace-pre-wrap">{entry.content}</p>
+                                    {entry.voiceNoteUrl && (
+                                        <div>
+                                            <Label>Voice Note</Label>
+                                            <audio controls src={entry.voiceNoteUrl} className="w-full mt-2">
+                                                Your browser does not support the audio element.
+                                            </audio>
+                                        </div>
+                                    )}
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="outline" disabled>
+                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" disabled={isDeleting}>
+                                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                Delete
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action cannot be undone. This will permanently delete your journal entry.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDelete(entry.id)}>
+                                                    Continue
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     ))}
                 </div>
             )}
