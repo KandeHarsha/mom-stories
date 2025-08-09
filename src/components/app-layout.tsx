@@ -28,8 +28,6 @@ const navItems = [
   { href: '/memory-box', label: 'Memory Box', icon: Box },
   { href: '/ai-support', label: 'Gentle AI Support', icon: HeartHandshake },
   { href: '/health', label: 'Health Tracker', icon: Baby },
-  { href: '/profile', label: 'Profile', icon: User },
-  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
