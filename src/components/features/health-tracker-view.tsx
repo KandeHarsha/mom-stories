@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import {
@@ -17,9 +18,9 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Baby } from 'lucide-react';
+import { Baby, Smile } from 'lucide-react';
 
 const growthData = [
   { month: 'Birth', weight: 7.5, length: 20 },
@@ -31,9 +32,9 @@ const growthData = [
   { month: '12m', weight: 22, length: 29.5 },
 ];
 
-const chartConfig = {
+const babyChartConfig = {
   weight: { label: 'Weight (lbs)', color: 'hsl(var(--primary))' },
-  length: { label: 'Length (in)', color: 'hsl(var(--accent))' },
+  length: { label: 'Length (in)', color: 'hsl(var(--accent-foreground))' },
 };
 
 const vaccinations = [
@@ -51,6 +52,31 @@ const vaccinations = [
     { name: 'Polio (IPV)', age: '4 months', doses: '2nd', status: false },
 ];
 
+const momSleepData = [
+  { day: 'Mon', hours: 5 },
+  { day: 'Tue', hours: 6 },
+  { day: 'Wed', hours: 4.5 },
+  { day: 'Thu', hours: 7 },
+  { day: 'Fri', hours: 5.5 },
+  { day: 'Sat', hours: 8 },
+  { day: 'Sun', hours: 6 },
+];
+
+const momMoodData = [
+    { day: 'Mon', mood: 3 },
+    { day: 'Tue', mood: 4 },
+    { day: 'Wed', mood: 2 },
+    { day: 'Thu', mood: 5 },
+    { day: 'Fri', mood: 3 },
+    { day: 'Sat', mood: 5 },
+    { day: 'Sun', mood: 4 },
+];
+
+const momChartConfig = {
+    sleep: { label: 'Sleep (hours)', color: 'hsl(var(--chart-1))' },
+    mood: { label: 'Mood (1-5)', color: 'hsl(var(--chart-2))' }
+}
+
 export default function HealthTrackerView() {
   return (
     <div className="space-y-6">
@@ -60,13 +86,14 @@ export default function HealthTrackerView() {
                 Growth & Health Tools
             </h2>
             <p className="text-muted-foreground mt-1">
-                Keep track of important milestones and health data with ease and clarity.
+                Keep track of important milestones and health data for you and your baby.
             </p>
         </div>
         <Tabs defaultValue="growth" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-                <TabsTrigger value="growth">Growth Chart</TabsTrigger>
-                <TabsTrigger value="vaccinations">Vaccinations</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 max-w-lg">
+                <TabsTrigger value="growth">Baby Growth</TabsTrigger>
+                <TabsTrigger value="vaccinations">Baby Vaccinations</TabsTrigger>
+                <TabsTrigger value="mom">Mom's Wellness</TabsTrigger>
             </TabsList>
             <TabsContent value="growth" className="mt-6">
                 <Card>
@@ -75,16 +102,17 @@ export default function HealthTrackerView() {
                         <CardDescription>Visualizing weight and length over the first year.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer config={chartConfig} className="h-[400px] w-full">
+                        <ChartContainer config={babyChartConfig} className="h-[400px] w-full">
                             <ResponsiveContainer>
                                 <BarChart data={growthData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
                                     <CartesianGrid vertical={false} />
                                     <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                                    <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--primary))" />
-                                    <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--accent))" />
+                                    <YAxis yAxisId="left" orientation="left" stroke={babyChartConfig.weight.color} />
+                                    <YAxis yAxisId="right" orientation="right" stroke={babyChartConfig.length.color} />
                                     <ChartTooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="weight" fill="hsl(var(--primary))" radius={4} yAxisId="left" />
-                                    <Bar dataKey="length" fill="hsl(var(--accent))" radius={4} yAxisId="right" />
+                                    <Legend />
+                                    <Bar dataKey="weight" name="Weight (lbs)" fill={babyChartConfig.weight.color} radius={4} yAxisId="left" />
+                                    <Bar dataKey="length" name="Length (in)" fill={babyChartConfig.length.color} radius={4} yAxisId="right" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -122,6 +150,44 @@ export default function HealthTrackerView() {
                         </Table>
                     </CardContent>
                 </Card>
+            </TabsContent>
+            <TabsContent value="mom" className="mt-6">
+                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Weekly Sleep Pattern</CardTitle>
+                            <CardDescription>Tracking your hours of sleep over the past week.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ChartContainer config={momChartConfig} className="h-[300px] w-full">
+                                <BarChart data={momSleepData}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} />
+                                    <YAxis />
+                                    <Tooltip content={<ChartTooltipContent />} />
+                                    <Bar dataKey="hours" name="Hours" fill={momChartConfig.sleep.color} radius={4} />
+                                </BarChart>
+                            </ChartContainer>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Weekly Mood Tracker</CardTitle>
+                            <CardDescription>Tracking your mood on a scale of 1 to 5.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ChartContainer config={momChartConfig} className="h-[300px] w-full">
+                                <BarChart data={momMoodData}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} />
+                                    <YAxis domain={[0, 5]}/>
+                                    <Tooltip content={<ChartTooltipContent />} />
+                                    <Bar dataKey="mood" name="Mood" fill={momChartConfig.mood.color} radius={4} />
+                                </BarChart>
+                            </ChartContainer>
+                        </CardContent>
+                    </Card>
+                </div>
             </TabsContent>
         </Tabs>
     </div>
