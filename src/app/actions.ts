@@ -7,9 +7,14 @@ import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-pro
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
 import { updateJournalEntry } from '@/ai/flows/update-journal-entry';
 import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
-import { uploadFileAndGetURL } from '@/services/journal-service';
+import { uploadFileAndGetURL, getJournalEntries } from '@/services/journal-service';
 import { getUserProfile, updateUserProfile, type UserProfile } from '@/services/user-service';
 import { z } from 'zod';
+import { saveMemory } from '@/ai/flows/save-memory';
+import { deleteMemory } from '@/ai/flows/delete-memory';
+import { getMemories } from '@/ai/flows/get-memories';
+import { type Memory } from '@/services/memory-service';
+
 
 const DUMMY_USER_ID = 'dummy-user-id'; // Use a consistent dummy user ID
 
@@ -174,5 +179,68 @@ export async function updateUserProfileAction(data: {name: string, phase: string
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
         console.error("Update profile error in action:", errorMessage);
         return { error: 'Failed to update profile.' };
+    }
+}
+
+
+// Memory Box Actions
+export async function saveMemoryAction(formData: FormData) {
+    const dataToSave: {
+        title: string;
+        text?: string;
+        userId: string;
+        imageUrl?: string;
+        voiceNoteUrl?: string;
+    } = {
+        title: formData.get('title') as string,
+        text: formData.get('text') as string,
+        userId: DUMMY_USER_ID,
+    };
+
+    const imageFile = formData.get('image') as File | null;
+    if (imageFile && imageFile.size > 0) {
+        try {
+            const imageBuffer = await imageFile.arrayBuffer();
+            dataToSave.imageUrl = await uploadFileAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID, 'memories-images');
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+            return { error: `Failed to upload image: ${errorMessage}` };
+        }
+    }
+
+    const voiceNoteFile = formData.get('voiceNote') as File | null;
+    if (voiceNoteFile && voiceNoteFile.size > 0) {
+        try {
+            const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, voiceNoteFile.name, DUMMY_USER_ID, 'memories-voice-notes');
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+            return { error: `Failed to upload voice note: ${errorMessage}` };
+        }
+    }
+
+    try {
+        await saveMemory(dataToSave);
+        return { success: true };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+        return { error: `Failed to save memory: ${errorMessage}` };
+    }
+}
+
+export async function getMemoriesAction(userId: string): Promise<Memory[]> {
+    return await getMemories(userId);
+}
+
+export async function deleteMemoryAction(memoryId: string) {
+    if (!memoryId) {
+        return { error: 'Memory ID is required.' };
+    }
+    try {
+        await deleteMemory(memoryId);
+        return { success: true };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+        return { error: `Failed to delete memory: ${errorMessage}` };
     }
 }

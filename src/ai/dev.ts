@@ -7,3 +7,6 @@ import '@/ai/flows/personalized-journaling-prompts.ts';
 import '@/ai/flows/save-journal-entry.ts';
 import '@/ai/flows/delete-journal-entry.ts';
 import '@/ai/flows/update-journal-entry.ts';
+import '@/ai/flows/save-memory.ts';
+import '@/ai/flows/delete-memory.ts';
+import '@/ai/flows/get-memories.ts';
