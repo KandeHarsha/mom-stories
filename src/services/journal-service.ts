@@ -1,7 +1,7 @@
 
 // src/services/journal-service.ts
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export interface JournalEntry {
@@ -29,6 +29,19 @@ export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdA
     } catch (e) {
         console.error("Error adding document: ", e);
         throw new Error('Could not save journal entry.');
+    }
+}
+
+export async function updateJournalEntry(entryId: string, data: Partial<Pick<JournalEntry, 'title' | 'content'>>): Promise<void> {
+    try {
+        const docRef = doc(db, 'journalEntries', entryId);
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: serverTimestamp(),
+        });
+    } catch (e) {
+        console.error("Error updating document: ", e);
+        throw new Error('Could not update journal entry.');
     }
 }
 

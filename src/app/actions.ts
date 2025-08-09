@@ -5,6 +5,7 @@
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 import { generateJournalingPrompt } from '@/ai/flows/personalized-journaling-prompts';
 import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
+import { updateJournalEntry } from '@/ai/flows/update-journal-entry';
 import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
 import { uploadFileAndGetURL } from '@/services/journal-service';
 import { getUserProfile, updateUserProfile, type UserProfile } from '@/services/user-service';
@@ -106,6 +107,29 @@ export async function saveJournalEntryAction(formData: FormData) {
         return { error: 'Failed to save journal entry. Please try again later.' };
     }
 }
+
+export async function updateJournalEntryAction(entryId: string, formData: FormData) {
+    const dataToUpdate: {
+        title: string;
+        content: string;
+    } = {
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
+    };
+    
+    // Note: File updating is not implemented in this version for simplicity.
+    // To implement it, you would check for new files, upload them, and update the URLs.
+
+    try {
+        await updateJournalEntry(entryId, dataToUpdate);
+        return { success: true };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+        console.error("Update error in action:", errorMessage);
+        return { error: 'Failed to update journal entry. Please try again later.' };
+    }
+}
+
 
 export async function deleteJournalEntryAction(entryId: string) {
     if (!entryId) {

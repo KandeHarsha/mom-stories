@@ -40,7 +40,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { saveJournalEntryAction, deleteJournalEntryAction } from '@/app/actions';
+import { saveJournalEntryAction, deleteJournalEntryAction, updateJournalEntryAction } from '@/app/actions';
 import { getJournalEntries, type JournalEntry } from '@/services/journal-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -53,8 +53,10 @@ export default function JournalView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isNewEntryOpen, setIsNewEntryOpen] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+
   // Image state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -188,6 +190,27 @@ export default function JournalView() {
     });
   };
 
+  const handleUpdate = (entryId: string, formData: FormData) => {
+    startSaveTransition(async () => {
+        const result = await updateJournalEntryAction(entryId, formData);
+        if (result.error) {
+            toast({
+                variant: 'destructive',
+                title: 'Oh no! Something went wrong.',
+                description: result.error,
+            });
+        } else if (result.success) {
+            toast({
+                title: 'Entry Updated!',
+                description: 'Your journal entry has been updated successfully.',
+            });
+            fetchEntries();
+            setSelectedEntry(null);
+            setIsEditMode(false);
+        }
+    });
+  }
+
   const handleDelete = (entryId: string) => {
     startDeleteTransition(async () => {
         const result = await deleteJournalEntryAction(entryId);
@@ -206,6 +229,11 @@ export default function JournalView() {
             setSelectedEntry(null);
         }
     });
+  }
+  
+  const handleOpenDialog = (entry: JournalEntry) => {
+    setSelectedEntry(entry);
+    setIsEditMode(false); // Reset to view mode on open
   }
 
   return (
@@ -341,54 +369,86 @@ export default function JournalView() {
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {entries.map(entry => (
-                        <Dialog key={entry.id}>
-                            <DialogTrigger asChild>
-                                <Card className="flex flex-col cursor-pointer hover:shadow-lg transition-shadow">
-                                    {entry.imageUrl && <div className="aspect-video relative"><Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="journal entry"/></div>}
-                                    <CardHeader>
-                                        <CardTitle>{entry.title}</CardTitle>
-                                        <CardDescription>{entry.createdAt}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow space-y-4">
-                                        <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
-                                        {entry.voiceNoteUrl && (
-                                            <audio controls src={entry.voiceNoteUrl} className="w-full" onClick={(e) => e.stopPropagation()}>
-                                                Your browser does not support the audio element.
-                                            </audio>
-                                        )}
-                                    </CardContent>
-                                    {entry.tags && entry.tags.length > 0 && (
-                                        <CardFooter className="flex-wrap gap-2">
-                                            {entry.tags.map(tag => (
-                                                <Badge key={tag} variant="secondary">{tag}</Badge>
-                                            ))}
-                                        </CardFooter>
-                                    )}
-                                </Card>
-                            </DialogTrigger>
-                             <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-                                <DialogHeader>
-                                    <DialogTitle>{entry.title}</DialogTitle>
-                                    <DialogDescription>{entry.createdAt}</DialogDescription>
-                                </DialogHeader>
-                                <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-4">
-                                    {entry.imageUrl && (
+                        <Card key={entry.id} onClick={() => handleOpenDialog(entry)} className="flex flex-col cursor-pointer hover:shadow-lg transition-shadow">
+                            {entry.imageUrl && <div className="aspect-video relative"><Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="journal entry"/></div>}
+                            <CardHeader>
+                                <CardTitle>{entry.title}</CardTitle>
+                                <CardDescription>{entry.createdAt}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow space-y-4">
+                                <p className="text-sm text-muted-foreground line-clamp-4">{entry.content}</p>
+                                {entry.voiceNoteUrl && (
+                                    <audio controls src={entry.voiceNoteUrl} className="w-full" onClick={(e) => e.stopPropagation()}>
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                )}
+                            </CardContent>
+                            {entry.tags && entry.tags.length > 0 && (
+                                <CardFooter className="flex-wrap gap-2">
+                                    {entry.tags.map(tag => (
+                                        <Badge key={tag} variant="secondary">{tag}</Badge>
+                                    ))}
+                                </CardFooter>
+                            )}
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
+        
+        {selectedEntry && (
+             <Dialog open={!!selectedEntry} onOpenChange={(isOpen) => { if (!isOpen) setSelectedEntry(null); }}>
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+                    <form action={(formData) => handleUpdate(selectedEntry.id, formData)}>
+                        <DialogHeader>
+                             {isEditMode ? (
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-title">Title</Label>
+                                    <Input id="edit-title" name="title" defaultValue={selectedEntry.title} required className="text-lg font-semibold" />
+                                </div>
+                            ) : (
+                                <>
+                                    <DialogTitle>{selectedEntry.title}</DialogTitle>
+                                    <DialogDescription>{selectedEntry.createdAt}</DialogDescription>
+                                </>
+                            )}
+                        </DialogHeader>
+                        <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-4 my-4">
+                            {isEditMode ? (
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-content">Content</Label>
+                                    <Textarea id="edit-content" name="content" defaultValue={selectedEntry.content} required rows={10} />
+                                </div>
+                            ) : (
+                                <>
+                                    {selectedEntry.imageUrl && (
                                         <div className="relative aspect-video">
-                                            <Image src={entry.imageUrl} alt={entry.title} layout="fill" objectFit="contain" className="rounded-lg" />
+                                            <Image src={selectedEntry.imageUrl} alt={selectedEntry.title} layout="fill" objectFit="contain" className="rounded-lg" />
                                         </div>
                                     )}
-                                    <p className="text-sm whitespace-pre-wrap">{entry.content}</p>
-                                    {entry.voiceNoteUrl && (
+                                    <p className="text-sm whitespace-pre-wrap">{selectedEntry.content}</p>
+                                    {selectedEntry.voiceNoteUrl && (
                                         <div>
                                             <Label>Voice Note</Label>
-                                            <audio controls src={entry.voiceNoteUrl} className="w-full mt-2">
+                                            <audio controls src={selectedEntry.voiceNoteUrl} className="w-full mt-2">
                                                 Your browser does not support the audio element.
                                             </audio>
                                         </div>
                                     )}
-                                </div>
-                                <DialogFooter>
-                                    <Button variant="outline" disabled>
+                                </>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            {isEditMode ? (
+                                <>
+                                    <Button type="button" variant="secondary" onClick={() => setIsEditMode(false)}>Cancel</Button>
+                                    <Button type="submit" disabled={isSaving}>
+                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Changes'}
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Button type="button" variant="outline" onClick={() => setIsEditMode(true)}>
                                         <Edit className="mr-2 h-4 w-4" /> Edit
                                     </Button>
                                     <AlertDialog>
@@ -407,19 +467,19 @@ export default function JournalView() {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDelete(entry.id)}>
+                                                <AlertDialogAction onClick={() => handleDelete(selectedEntry.id)}>
                                                     Continue
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    ))}
-                </div>
-            )}
-        </div>
+                                </>
+                            )}
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        )}
     </div>
   );
 }
