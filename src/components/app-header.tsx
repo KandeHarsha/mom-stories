@@ -14,6 +14,9 @@ import {
 import { Moon, Sun, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getUserProfileAction } from "@/app/actions";
+import { UserProfile } from "@/services/user-service";
 
 // This is a placeholder for theme switching logic.
 // In a real app, you would use a theme provider (e.g., next-themes).
@@ -32,10 +35,6 @@ const useTheme = () => {
 const useAuth = () => {
   return {
     isLoggedIn: true, // Set to true to show user nav for now
-    user: {
-      name: 'Mother',
-      email: 'mom@example.com',
-    }
   }
 }
 
@@ -66,15 +65,29 @@ export function AppHeader() {
 }
 
 function UserNav() {
-  const { user } = useAuth();
   const router = useRouter();
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+        const profile = await getUserProfileAction();
+        if(profile && !('error' in profile)) {
+            setUser(profile as UserProfile);
+        }
+    }
+    fetchUser();
+  }, [])
   
+  if (!user) {
+    return null; // Or a loading skeleton
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{user.name?.charAt(0) || 'M'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
