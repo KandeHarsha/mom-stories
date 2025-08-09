@@ -3,6 +3,7 @@
 'use client';
 
 import React, { useState, useTransition, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -46,6 +47,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function JournalView() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [isSaving, startSaveTransition] = useTransition();
   const [isLoading, startLoadingTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -87,6 +89,12 @@ export default function JournalView() {
   useEffect(() => {
     fetchEntries();
   }, []);
+  
+  useEffect(() => {
+    if (searchParams.get('action') === 'add') {
+      setIsNewEntryOpen(true);
+    }
+  }, [searchParams]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;

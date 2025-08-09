@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useTransition } from 'react';
 import {
@@ -20,7 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { getJournalingPrompt } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Wand2, ArrowRight } from 'lucide-react';
+import { Loader2, Wand2, ArrowRight, PlusCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 
@@ -114,17 +115,23 @@ export default function DashboardView() {
           <FeatureCard
             title="Private Journal"
             description="Chronicle your journey with text, voice, and photos."
-            onClick={() => router.push('/journal')}
+            onClick={() => router.push('/journal?action=add')}
+            buttonText="Add"
+            buttonIcon={PlusCircle}
           />
           <FeatureCard
             title="Gentle AI Support"
             description="Ask questions and receive non-clinical, emotional guidance."
             onClick={() => router.push('/ai-support')}
+            buttonText="Explore"
+            buttonIcon={ArrowRight}
           />
           <FeatureCard
             title="Memory Box"
             description="Securely store precious photos, letters, and keepsakes."
-            onClick={() => router.push('/memory-box')}
+            onClick={() => router.push('/memory-box?action=add')}
+            buttonText="Add"
+            buttonIcon={PlusCircle}
           />
         </div>
       </div>
@@ -132,7 +139,7 @@ export default function DashboardView() {
   );
 }
 
-function FeatureCard({ title, description, onClick }: { title: string, description: string, onClick: () => void }) {
+function FeatureCard({ title, description, onClick, buttonText, buttonIcon: ButtonIcon }: { title: string, description: string, onClick: () => void, buttonText: string, buttonIcon: React.ElementType }) {
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <CardHeader>
@@ -141,7 +148,8 @@ function FeatureCard({ title, description, onClick }: { title: string, descripti
       </CardHeader>
       <CardFooter>
         <Button variant="ghost" className="text-primary">
-          Explore <ArrowRight className="ml-2 h-4 w-4" />
+          <ButtonIcon className="mr-2 h-4 w-4" />
+          {buttonText}
         </Button>
       </CardFooter>
     </Card>

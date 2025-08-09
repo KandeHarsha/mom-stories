@@ -1,5 +1,7 @@
+
 'use client';
 import React, { useState, useTransition, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -42,6 +44,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function MemoryBoxView() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [isSaving, startSaveTransition] = useTransition();
   const [isLoading, startLoadingTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -81,6 +84,12 @@ export default function MemoryBoxView() {
   useEffect(() => {
     fetchMemories();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'add') {
+      setIsNewMemoryOpen(true);
+    }
+  }, [searchParams]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
