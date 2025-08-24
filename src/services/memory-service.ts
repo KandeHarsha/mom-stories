@@ -2,6 +2,7 @@
 // src/services/memory-service.ts
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc, where } from 'firebase/firestore';
+import { uploadFileAndGetURL } from './journal-service';
 
 export interface Memory {
     id: string;

@@ -54,13 +54,14 @@ export async function deleteJournalEntry(entryId: string): Promise<void> {
     }
 }
 
-export async function uploadFileAndGetURL(fileBuffer: ArrayBuffer, fileName: string, userId: string, folder: string): Promise<string> {
-    if (!fileBuffer) {
+export async function uploadFileAndGetURL(file: File | ArrayBuffer, userId: string, folder: string): Promise<string> {
+    if (!file) {
         throw new Error("No file data provided.");
     }
+    const fileName = file instanceof File ? file.name : 'voice-note.webm';
     const storageRef = ref(storage, `${folder}/${userId}/${Date.now()}-${fileName}`);
     try {
-        const snapshot = await uploadBytes(storageRef, fileBuffer);
+        const snapshot = await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(snapshot.ref);
         return downloadURL;
     } catch (e) {

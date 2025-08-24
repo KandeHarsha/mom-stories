@@ -82,8 +82,7 @@ export async function saveJournalEntryAction(formData: FormData) {
     const imageFile = formData.get('picture') as File | null;
     if (imageFile && imageFile.size > 0 && imageFile.name) {
         try {
-            const imageBuffer = await imageFile.arrayBuffer();
-            dataToSave.imageUrl = await uploadFileAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID, 'journal-images');
+            dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, DUMMY_USER_ID, 'journal-images');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Upload error in action:", errorMessage);
@@ -95,7 +94,7 @@ export async function saveJournalEntryAction(formData: FormData) {
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, voiceNoteFile.name, DUMMY_USER_ID, 'journal-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, DUMMY_USER_ID, 'journal-voice-notes');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Voice note upload error in action:", errorMessage);
@@ -200,8 +199,7 @@ export async function saveMemoryAction(formData: FormData) {
     const imageFile = formData.get('image') as File | null;
     if (imageFile && imageFile.size > 0) {
         try {
-            const imageBuffer = await imageFile.arrayBuffer();
-            dataToSave.imageUrl = await uploadFileAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID, 'memories-images');
+            dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, DUMMY_USER_ID, 'memories-images');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             return { error: `Failed to upload image: ${errorMessage}` };
@@ -212,7 +210,7 @@ export async function saveMemoryAction(formData: FormData) {
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, voiceNoteFile.name, DUMMY_USER_ID, 'memories-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, DUMMY_USER_ID, 'memories-voice-notes');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             return { error: `Failed to upload voice note: ${errorMessage}` };
