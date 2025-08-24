@@ -175,6 +175,9 @@ export default function JournalView() {
   };
 
   const handleSave = (formData: FormData) => {
+    if(selectedFile){
+      formData.append('picture', selectedFile);
+    }
     if(audioBlob){
       formData.append('voiceNote', audioBlob, 'voice-note.webm');
     }
@@ -280,14 +283,14 @@ export default function JournalView() {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                <div className="space-y-2">
-                                   <Label htmlFor="picture">Add a photo</Label>
+                                   <Label htmlFor="picture-upload">Add a photo</Label>
                                     <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                                      <label htmlFor="picture" className="cursor-pointer">
+                                      <label htmlFor="picture-upload" className="cursor-pointer">
                                         <ImagePlus className="h-5 w-5"/>
                                         <span>{selectedFile ? 'Change photo' : 'Upload photo'}</span>
                                       </label>
                                     </Button>
-                                   <Input id="picture" name="picture" type="file" className="hidden" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
+                                   <Input id="picture-upload" name="picture" type="file" className="hidden" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
                                </div>
                                <div className="space-y-2">
                                    <Label>Record a voice note</Label>

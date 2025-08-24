@@ -80,7 +80,7 @@ export async function saveJournalEntryAction(formData: FormData) {
     };
 
     const imageFile = formData.get('picture') as File | null;
-    if (imageFile && imageFile.size > 0) {
+    if (imageFile && imageFile.size > 0 && imageFile.name) {
         try {
             const imageBuffer = await imageFile.arrayBuffer();
             dataToSave.imageUrl = await uploadFileAndGetURL(imageBuffer, imageFile.name, DUMMY_USER_ID, 'journal-images');
