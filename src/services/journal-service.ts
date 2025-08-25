@@ -58,10 +58,13 @@ export async function uploadFileAndGetURL(file: File | ArrayBuffer, userId: stri
     if (!file) {
         throw new Error("No file data provided.");
     }
+    // IMPORTANT: Ensure your Firebase Storage bucket is correctly configured in firebase.ts and exists in your Firebase project.
     const fileName = file instanceof File ? file.name : 'voice-note.webm';
     const storageRef = ref(storage, `${folder}/${userId}/${Date.now()}-${fileName}`);
     try {
-        const snapshot = await uploadBytes(storageRef, file);
+        // If file is ArrayBuffer, wrap in Uint8Array for uploadBytes
+        const uploadData = file instanceof ArrayBuffer ? new Uint8Array(file) : file;
+        const snapshot = await uploadBytes(storageRef, uploadData);
         const downloadURL = await getDownloadURL(snapshot.ref);
         return downloadURL;
     } catch (e) {
