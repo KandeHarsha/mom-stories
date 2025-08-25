@@ -41,8 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookHeart, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { saveJournalEntryAction, deleteJournalEntryAction, updateJournalEntryAction } from '@/app/actions';
-import { getJournalEntries, type JournalEntry } from '@/services/journal-service';
+import { type JournalEntry } from '@/services/journal-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function JournalView() {
@@ -74,7 +73,11 @@ export default function JournalView() {
   const fetchEntries = () => {
     startLoadingTransition(async () => {
       try {
-        const fetchedEntries = await getJournalEntries('dummy-user-id');
+        const response = await fetch('/api/journal');
+        if (!response.ok) {
+          throw new Error('Failed to fetch entries');
+        }
+        const fetchedEntries = await response.json();
         setEntries(fetchedEntries);
       } catch (error) {
         toast({
@@ -174,22 +177,27 @@ export default function JournalView() {
     setMicPermission(null);
   };
 
-  const handleSave = (formData: FormData) => {
+  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
     if(selectedFile){
       formData.append('picture', selectedFile);
     }
     if(audioBlob){
       formData.append('voiceNote', audioBlob, 'voice-note.webm');
     }
+    
     startSaveTransition(async () => {
-      const result = await saveJournalEntryAction(formData);
-      if (result.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Oh no! Something went wrong.',
-          description: result.error,
+      try {
+        const response = await fetch('/api/journal', {
+            method: 'POST',
+            body: formData,
         });
-      } else if (result.success) {
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to save entry');
+        }
         toast({
           title: 'Entry Saved!',
           description: 'Your journal entry has been saved successfully.',
@@ -197,20 +205,38 @@ export default function JournalView() {
         resetForm();
         fetchEntries();
         setIsNewEntryOpen(false); // Close the dialog
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+          variant: 'destructive',
+          title: 'Oh no! Something went wrong.',
+          description: errorMessage,
+        });
       }
     });
   };
 
-  const handleUpdate = (entryId: string, formData: FormData) => {
+  const handleUpdate = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedEntry) return;
+
+    const formData = new FormData(e.currentTarget);
+    const updatedData = {
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
+    }
+
     startSaveTransition(async () => {
-        const result = await updateJournalEntryAction(entryId, formData);
-        if (result.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Oh no! Something went wrong.',
-                description: result.error,
+        try {
+            const response = await fetch(`/api/journal/${selectedEntry.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedData),
             });
-        } else if (result.success) {
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to update entry');
+            }
             toast({
                 title: 'Entry Updated!',
                 description: 'Your journal entry has been updated successfully.',
@@ -218,26 +244,40 @@ export default function JournalView() {
             fetchEntries();
             setSelectedEntry(null);
             setIsEditMode(false);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({
+                variant: 'destructive',
+                title: 'Oh no! Something went wrong.',
+                description: errorMessage,
+            });
         }
     });
   }
 
   const handleDelete = (entryId: string) => {
     startDeleteTransition(async () => {
-        const result = await deleteJournalEntryAction(entryId);
-        if (result.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Oh no! Something went wrong.',
-                description: result.error,
+        try {
+            const response = await fetch(`/api/journal/${entryId}`, {
+                method: 'DELETE',
             });
-        } else {
+             if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete entry');
+            }
             toast({
                 title: 'Entry Deleted',
                 description: 'Your journal entry has been deleted.',
             });
             fetchEntries();
             setSelectedEntry(null);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({
+                variant: 'destructive',
+                title: 'Oh no! Something went wrong.',
+                description: errorMessage,
+            });
         }
     });
   }
@@ -262,7 +302,7 @@ export default function JournalView() {
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[625px]">
-                     <form action={handleSave} ref={formRef}>
+                     <form onSubmit={handleSave} ref={formRef}>
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <BookHeart className="h-6 w-6 text-primary"/>
@@ -410,7 +450,7 @@ export default function JournalView() {
         {selectedEntry && (
              <Dialog open={!!selectedEntry} onOpenChange={(isOpen) => { if (!isOpen) setSelectedEntry(null); }}>
                 <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-                    <form action={(formData) => handleUpdate(selectedEntry.id, formData)}>
+                    <form onSubmit={(e) => handleUpdate(e)}>
                         <DialogHeader>
                              {isEditMode ? (
                                 <div className="space-y-2">
