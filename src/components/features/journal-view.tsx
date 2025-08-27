@@ -302,17 +302,17 @@ export default function JournalView() {
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
-                     <form onSubmit={handleSave} ref={formRef}>
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <BookHeart className="h-6 w-6 text-primary"/>
-                                Create a New Journal Entry
-                            </DialogTitle>
-                            <DialogDescription>
-                                What's on your mind and in your heart today? Click save when you're done.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="py-4 space-y-6 overflow-y-auto pr-4 -mr-4">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <BookHeart className="h-6 w-6 text-primary"/>
+                            Create a New Journal Entry
+                        </DialogTitle>
+                        <DialogDescription>
+                            What's on your mind and in your heart today? Click save when you're done.
+                        </DialogDescription>
+                    </DialogHeader>
+                     <form onSubmit={handleSave} ref={formRef} className="flex-grow overflow-hidden flex flex-col">
+                        <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-6 py-4">
                             <div className="space-y-2">
                                <Label htmlFor="title">Title</Label>
                                <Input id="title" name="title" placeholder="e.g., A special moment, a worry, a dream..." required/>
@@ -384,7 +384,7 @@ export default function JournalView() {
                                 </div>
                             )}
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="pt-4 flex-shrink-0">
                             <DialogClose asChild>
                                 <Button type="button" variant="secondary" onClick={resetForm}>
                                     Cancel
@@ -450,24 +450,24 @@ export default function JournalView() {
         {selectedEntry && (
              <Dialog open={!!selectedEntry} onOpenChange={(isOpen) => { if (!isOpen) setSelectedEntry(null); }}>
                 <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-                    <form onSubmit={(e) => handleUpdate(e)}>
-                        <DialogHeader>
-                             {isEditMode ? (
-                                <div className="space-y-2">
-                                    <Label htmlFor="edit-title">Title</Label>
-                                    <Input id="edit-title" name="title" defaultValue={selectedEntry.title} required className="text-lg font-semibold" />
-                                </div>
-                            ) : (
-                                <>
-                                    <DialogTitle>{selectedEntry.title}</DialogTitle>
-                                    <DialogDescription>{selectedEntry.createdAt}</DialogDescription>
-                                </>
-                            )}
-                        </DialogHeader>
+                    <DialogHeader>
+                        {isEditMode ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-title" className="sr-only">Title</Label>
+                                <Input id="edit-title" name="title" defaultValue={selectedEntry.title} required className="text-lg font-semibold" />
+                            </div>
+                        ) : (
+                            <>
+                                <DialogTitle>{selectedEntry.title}</DialogTitle>
+                                <DialogDescription>{selectedEntry.createdAt}</DialogDescription>
+                            </>
+                        )}
+                    </DialogHeader>
+                    <form onSubmit={(e) => handleUpdate(e)} className="flex-grow overflow-hidden flex flex-col">
                         <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-4 my-4">
                             {isEditMode ? (
                                 <div className="space-y-2">
-                                    <Label htmlFor="edit-content">Content</Label>
+                                    <Label htmlFor="edit-content" className="sr-only">Content</Label>
                                     <Textarea id="edit-content" name="content" defaultValue={selectedEntry.content} required rows={10} />
                                 </div>
                             ) : (
@@ -489,7 +489,7 @@ export default function JournalView() {
                                 </>
                             )}
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="pt-4 flex-shrink-0">
                             {isEditMode ? (
                                 <>
                                     <Button type="button" variant="secondary" onClick={() => setIsEditMode(false)}>Cancel</Button>
@@ -534,5 +534,3 @@ export default function JournalView() {
     </div>
   );
 }
-
-    
