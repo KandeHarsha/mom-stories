@@ -12,10 +12,12 @@ import {
   Box,
   Settings,
   User,
+  PanelLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 
 interface AppLayoutProps {
@@ -60,9 +62,39 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </aside>
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-64">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-           <div className="sm:hidden">
-            <Link href="/" className="text-lg font-bold tracking-tight font-headline">Mama's Embrace</Link>
-           </div>
+           <Sheet>
+            <SheetTrigger asChild>
+              <Button size="icon" variant="outline" className="sm:hidden">
+                <PanelLeft className="h-5 w-5" />
+                <span className="sr-only">Toggle Menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="sm:max-w-xs">
+              <nav className="grid gap-6 text-lg font-medium">
+                <Link
+                  href="/"
+                  className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+                >
+                  <HeartHandshake className="h-5 w-5 transition-all group-hover:scale-110" />
+                  <span className="sr-only">Mama's Embrace</span>
+                </Link>
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground',
+                      pathname === item.href && 'text-foreground'
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
            <div className="ml-auto flex items-center space-x-4">
              <AppHeader />
            </div>
