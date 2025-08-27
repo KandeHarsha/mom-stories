@@ -301,7 +301,7 @@ export default function JournalView() {
                         New Entry
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[625px]">
+                <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
                      <form onSubmit={handleSave} ref={formRef}>
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
@@ -312,7 +312,7 @@ export default function JournalView() {
                                 What's on your mind and in your heart today? Click save when you're done.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="py-4 space-y-6">
+                        <div className="py-4 space-y-6 overflow-y-auto pr-4 -mr-4">
                             <div className="space-y-2">
                                <Label htmlFor="title">Title</Label>
                                <Input id="title" name="title" placeholder="e.g., A special moment, a worry, a dream..." required/>
@@ -534,3 +534,5 @@ export default function JournalView() {
     </div>
   );
 }
+
+    

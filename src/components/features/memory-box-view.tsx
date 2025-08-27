@@ -266,7 +266,7 @@ export default function MemoryBoxView() {
                     Upload a Memory
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
+            <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
                  <form action={handleSave} ref={formRef}>
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export default function MemoryBoxView() {
                             What precious moment do you want to save? Click save when you're done.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 space-y-6">
+                    <div className="py-4 space-y-6 overflow-y-auto pr-4 -mr-4">
                         <div className="space-y-2">
                            <Label htmlFor="title">Title</Label>
                            <Input id="title" name="title" placeholder="e.g., First ultrasound, a funny quote..." required/>
@@ -401,12 +401,12 @@ export default function MemoryBoxView() {
 
       {selectedMemory && (
         <Dialog open={!!selectedMemory} onOpenChange={(isOpen) => { if (!isOpen) setSelectedMemory(null); }}>
-          <DialogContent className="sm:max-w-xl">
+          <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>{selectedMemory.title}</DialogTitle>
               <DialogDescription>{selectedMemory.createdAt as string}</DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-4 overflow-y-auto pr-4 -mr-4">
               {selectedMemory.imageUrl && (
                 <div className="relative aspect-video">
                   <Image src={selectedMemory.imageUrl} alt={selectedMemory.title} layout="fill" objectFit="contain" className="rounded-lg" />
@@ -457,3 +457,5 @@ export default function MemoryBoxView() {
     </div>
   );
 }
+
+    
