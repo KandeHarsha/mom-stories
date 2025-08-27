@@ -1,6 +1,6 @@
 
 'use client';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,7 +43,7 @@ export function AppHeader() {
   const { isLoggedIn } = useAuth();
 
   return (
-    <div className="border-b">
+    <div className="border-b w-full">
       <div className="flex h-16 items-center px-4 md:px-8">
         <div className="ml-auto flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">

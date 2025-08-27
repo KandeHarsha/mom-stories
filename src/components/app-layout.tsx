@@ -58,8 +58,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </nav>
       </aside>
-      <div className="flex flex-col sm:pl-64 h-screen">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6 shrink-0">
+      <div className="flex flex-col sm:pl-64">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
            <Sheet>
             <SheetTrigger asChild>
               <Button size="icon" variant="outline" className="sm:hidden">
@@ -93,7 +93,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </SheetContent>
           </Sheet>
 
-           <div className="ml-auto flex items-center space-x-4">
+           <div className="w-full flex justify-end">
              <AppHeader />
            </div>
         </header>
