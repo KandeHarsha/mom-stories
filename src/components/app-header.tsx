@@ -35,7 +35,7 @@ const useTheme = () => {
 // In a real app, you would use a context provider to manage auth state.
 const useAuth = () => {
   return {
-    isLoggedIn: true, // Set to true to show user nav for now
+    isLoggedIn: true, // We will make this dynamic later
   }
 }
 
@@ -54,6 +54,7 @@ export function AppHeader() {
 
   useEffect(() => {
     const fetchUser = async () => {
+        // This will be updated to use the logged-in user's ID
         const profile = await getUserProfileAction();
         if(profile && !('error' in profile)) {
             setUser(profile as UserProfile);
@@ -102,7 +103,7 @@ function UserNav({ user }: { user: UserProfile | null }) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarFallback>{user.name?.charAt(0) || 'M'}</AvatarFallback>
+            <AvatarFallback>{user.name?.charAt(0).toUpperCase() || 'M'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

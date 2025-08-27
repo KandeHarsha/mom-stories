@@ -9,11 +9,31 @@ export interface UserProfile {
     email: string;
     phase: 'preparation' | 'pregnancy' | 'fourth-trimester' | 'beyond' | '';
     updatedAt: any;
+    createdAt: any;
 }
 
-export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    try {
+export async function createUserProfile(userId: string, data: { name: string, email: string }) {
+     try {
         const docRef = doc(db, 'userProfiles', userId);
+        await setDoc(docRef, {
+            ...data,
+            phase: '', // Default phase
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+    } catch (e) {
+        console.error("Error creating user profile: ", e);
+        throw new Error('Could not create user profile.');
+    }
+}
+
+
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+    // If no userId is provided, fallback to dummy for now. This will be removed later.
+    const finalUserId = userId || 'dummy-user-id';
+    
+    try {
+        const docRef = doc(db, 'userProfiles', finalUserId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -28,15 +48,19 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             } as UserProfile;
             return profileData;
         } else {
-            // Optionally, create a default profile
-            const defaultProfile = { 
-                name: 'Mother',
-                email: 'mom@example.com',
-                phase: '', 
-                updatedAt: serverTimestamp() 
-            };
-            await setDoc(docRef, defaultProfile);
-            return { id: userId, ...defaultProfile, updatedAt: new Date().toISOString() };
+            // For the dummy user, create a default profile if it doesn't exist
+            if (finalUserId === 'dummy-user-id') {
+                const defaultProfile = { 
+                    name: 'Sara',
+                    email: 'sara@example.com',
+                    phase: 'pregnancy', 
+                    updatedAt: serverTimestamp(),
+                    createdAt: serverTimestamp(),
+                };
+                await setDoc(docRef, defaultProfile);
+                return { id: finalUserId, ...defaultProfile, updatedAt: new Date().toISOString(), createdAt: new Date().toISOString() };
+            }
+            return null; // For real users, if no profile exists, return null.
         }
     } catch (e) {
         console.error("Error getting user profile: ", e);
