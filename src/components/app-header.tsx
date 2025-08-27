@@ -65,13 +65,13 @@ export function AppHeader() {
   return (
     <div className="border-b w-full">
       <div className="flex h-16 items-center px-4 md:px-8">
-        <div className="ml-auto flex items-center space-x-4">
-          {user && user.phase && (
+         {user && user.phase && (
             <Badge variant="outline" className="hidden sm:flex items-center gap-2">
               <Heart className="h-4 w-4 text-primary" />
               <span>{motherhoodStages[user.phase]}</span>
             </Badge>
           )}
+        <div className="ml-auto flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
