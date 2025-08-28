@@ -106,8 +106,7 @@ function UserNav({ user }: { user: UserProfile | null }) {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     Cookies.remove('session');
-    router.push('/login');
-    router.refresh();
+    window.location.href = '/login';
   };
 
   if (!user) {
