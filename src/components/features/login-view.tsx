@@ -46,10 +46,9 @@ export default function LoginView() {
           title: 'Login Successful',
           description: "Welcome back!",
         });
-
-        // Redirect to dashboard or another protected route
-        router.push('/');
-        router.refresh(); // Refresh to update server-side state
+        
+        // Hard refresh to re-evaluate middleware and root layout
+        window.location.href = '/';
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

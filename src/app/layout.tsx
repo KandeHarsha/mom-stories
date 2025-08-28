@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppLayout from '@/components/app-layout';
 import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
   title: "Mama's Embrace",
@@ -15,8 +16,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = headers().get('x-next-pathname') || '';
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const cookieStore = cookies();
+  const session = cookieStore.get('session');
+  const isLoggedIn = !!session;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -26,14 +28,14 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        {isAuthPage ? (
-          <>
-            {children}
-          </>
-        ) : (
+        {isLoggedIn ? (
           <AppLayout>
             {children}
           </AppLayout>
+        ) : (
+          <>
+            {children}
+          </>
         )}
         <Toaster />
       </body>

@@ -11,13 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun, LogIn, Heart } from "lucide-react";
+import { Moon, Sun, LogIn, Heart, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getUserProfileAction } from "@/app/actions";
 import { UserProfile } from "@/services/user-service";
 import { Badge } from "./ui/badge";
+import Cookies from 'js-cookie';
+
 
 // This is a placeholder for theme switching logic.
 // In a real app, you would use a theme provider (e.g., next-themes).
@@ -34,9 +36,15 @@ const useTheme = () => {
 // This is a placeholder for auth state.
 // In a real app, you would use a context provider to manage auth state.
 const useAuth = () => {
-  return {
-    isLoggedIn: true, // We will make this dynamic later
-  }
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if the cookie exists
+    const session = Cookies.get('session');
+    setIsLoggedIn(!!session);
+  }, []);
+  
+  return { isLoggedIn };
 }
 
 const motherhoodStages = {
@@ -53,20 +61,21 @@ export function AppHeader() {
   const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-        // This will be updated to use the logged-in user's ID
-        const profile = await getUserProfileAction();
-        if(profile && !('error' in profile)) {
-            setUser(profile as UserProfile);
+    if (isLoggedIn) {
+        const fetchUser = async () => {
+            const profile = await getUserProfileAction();
+            if(profile && !('error' in profile)) {
+                setUser(profile as UserProfile);
+            }
         }
+        fetchUser();
     }
-    fetchUser();
-  }, [])
+  }, [isLoggedIn])
 
   return (
     <div className="border-b w-full">
       <div className="flex h-16 items-center px-4 md:px-8">
-         {user && user.phase && (
+         {isLoggedIn && user && user.phase && (
             <Badge variant="outline" className="hidden sm:flex items-center gap-2">
               <Heart className="h-4 w-4 text-primary" />
               <span>{motherhoodStages[user.phase]}</span>
@@ -94,6 +103,13 @@ export function AppHeader() {
 function UserNav({ user }: { user: UserProfile | null }) {
   const router = useRouter();
   
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    Cookies.remove('session');
+    router.push('/login');
+    router.refresh();
+  };
+
   if (!user) {
     return null; // Or a loading skeleton
   }
@@ -122,7 +138,10 @@ function UserNav({ user }: { user: UserProfile | null }) {
           <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Log out</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
