@@ -5,13 +5,12 @@ import type { NextRequest } from 'next/server';
 
 const protectedRoutes = ['/dashboard', '/journal', '/memory-box', '/ai-support', '/health', '/profile', '/settings'];
 const authRoutes = ['/login', '/register'];
-const publicRoutes = ['/login', '/register'];
 
 export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('session');
   const { pathname } = request.nextUrl;
-  
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
 
   // If user is logged in and tries to access an auth route, redirect to dashboard
   if (sessionCookie && authRoutes.includes(pathname)) {
@@ -20,17 +19,9 @@ export function middleware(request: NextRequest) {
 
   // If user is not logged in and tries to access a protected route, redirect to login
   if (!sessionCookie && isProtectedRoute) {
-    if (pathname === '/') { // Special case for root
-        return NextResponse.redirect(new URL('/login', request.url));
-    }
     return NextResponse.redirect(new URL('/login', request.url));
   }
   
-  // Redirect root to dashboard if logged in
-  if (sessionCookie && pathname === '/') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
   return NextResponse.next();
 }
 
