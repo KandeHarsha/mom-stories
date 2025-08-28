@@ -8,6 +8,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    // The middleware should handle the redirection logic.
+    // This is a fallback to ensure client-side navigation also redirects.
     router.replace('/dashboard');
   }, [router]);
 
