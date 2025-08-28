@@ -8,13 +8,14 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const validatedData = loginSchema.safeParse(body);
+    console.log("validatedData", validatedData);
 
     if (!validatedData.success) {
       return NextResponse.json({ error: validatedData.error.errors.map(e => e.message).join(', ') }, { status: 400 });
     }
 
     const userCredential = await loginUser(validatedData.data);
-    const idToken = await userCredential.user.getIdToken();
+    const idToken = await userCredential.access_token;
 
     // Set a cookie to manage the session
     cookies().set('session', idToken, {

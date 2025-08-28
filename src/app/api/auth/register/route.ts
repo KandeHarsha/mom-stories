@@ -6,6 +6,7 @@ import { registerUser, registerSchema } from '@/services/auth-service';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log(body);
     const validatedData = registerSchema.safeParse(body);
 
     if (!validatedData.success) {

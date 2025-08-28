@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { z } from 'zod';
 import { createUserProfile } from './user-service';
+import axios from 'axios';
 
 export const registerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
@@ -25,42 +26,71 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
 
-export async function registerUser(data: RegisterInput): Promise<UserCredential> {
+export async function registerUser(data: RegisterInput): Promise<any> {
+    console.log("registerUser", data);
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-        
-        // After creating the user in Firebase Auth, create their profile in Firestore
-        if (userCredential.user) {
-            await createUserProfile(userCredential.user.uid, {
-                name: data.name,
-                email: data.email,
-            });
-        }
-        
-        return userCredential;
+        const response = await axios.post(
+            'https://api.loginradius.com/identity/v2/manage/account',
+            {
+                Email: [{ Type: "Primary", Value: data.email }],
+                Password: data.password,
+                FirstName: data.name,
+                // Add additional profile fields if needed
+            },
+            {
+                params: {
+                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    apisecret: process.env.LOGINRADIUS_API_SECRET, // Only if needed (backend)
+                },
+
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+        console.log("response", response);
+        return response.data;
     } catch (error: any) {
-        // Handle specific Firebase errors
-        if (error.code === 'auth/email-already-in-use') {
-            throw new Error('This email is already registered.');
-        }
-        console.error("Error registering user:", error);
-        throw new Error('Registration failed. Please try again.');
+        throw new Error(error.response?.data?.Description || 'Registration failed.');
     }
 }
 
-export async function loginUser(data: LoginInput): Promise<UserCredential> {
+
+export async function loginUser(data: LoginInput): Promise<any> {
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-        return userCredential;
+        const response = await axios.post(
+            'https://api.loginradius.com/identity/v2/auth/login',
+            {
+                email: data.email,
+                password: data.password
+            },
+            {
+                params: {
+                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    apisecret: process.env.LOGINRADIUS_API_SECRET, // Only if needed (backend)
+                },
+
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+        return response.data; // Includes access token and profile info
     } catch (error: any) {
-        // Handle specific Firebase errors
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-             throw new Error('Invalid email or password.');
-        }
-        console.error("Error logging in user:", error);
-        throw new Error('Login failed. Please try again.');
+        throw new Error(error.response?.data?.Description || 'Login failed.');
     }
 }
+
+
+// export async function loginUser(data: LoginInput): Promise<UserCredential> {
+//     try {
+//         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+//         return userCredential;
+//     } catch (error: any) {
+//         // Handle specific Firebase errors
+//         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+//              throw new Error('Invalid email or password.');
+//         }
+//         console.error("Error logging in user:", error);
+//         throw new Error('Login failed. Please try again.');
+//     }
+// }
 
 export async function logoutUser() {
     try {
