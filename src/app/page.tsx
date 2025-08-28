@@ -1,14 +1,15 @@
 
+// src/app/page.tsx
 'use client';
-
-import React from 'react';
-import DashboardView from '@/components/features/dashboard-view';
-
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <DashboardView />
-    </div>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/dashboard');
+  }, [router]);
+
+  return null; // Or a loading spinner
 }

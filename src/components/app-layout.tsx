@@ -23,7 +23,7 @@ interface AppLayoutProps {
 }
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/journal', label: 'Private Journal', icon: BookHeart },
   { href: '/memory-box', label: 'Memory Box', icon: Box },
   { href: '/ai-support', label: 'Gentle AI Support', icon: HeartHandshake },
@@ -37,9 +37,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-background sm:flex">
         <div className="flex h-16 items-center border-b px-6">
-          <Link href="/" className="flex items-center gap-2 font-headline font-semibold text-lg">
+          <Link href="/dashboard" className="flex items-center gap-2 font-headline font-semibold text-lg">
             <HeartHandshake className="h-6 w-6 text-primary" />
-            <span>Mom Stories</span>
+            <span>Mama's Embrace</span>
           </Link>
         </div>
         <nav className="flex-1 overflow-auto py-4">
@@ -70,11 +70,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <SheetContent side="left" className="sm:max-w-xs">
               <nav className="grid gap-6 text-lg font-medium">
                 <Link
-                  href="/"
+                  href="/dashboard"
                   className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
                 >
                   <HeartHandshake className="h-5 w-5 transition-all group-hover:scale-110" />
-                  <span className="sr-only">Mom Stories</span>
+                  <span className="sr-only">Mama's Embrace</span>
                 </Link>
                 {navItems.map((item) => (
                   <Link

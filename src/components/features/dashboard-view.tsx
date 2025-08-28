@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, HeartHandshake } from 'lucide-react';
+import { PlusCircle, HeartHandshake, Baby } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardView() {
@@ -94,7 +94,7 @@ export default function DashboardView() {
             description="Track milestones for you and baby."
             onClick={() => router.push('/health')}
             buttonText="View"
-            buttonIcon={HeartHandshake}
+            buttonIcon={Baby}
           />
         </div>
       </div>

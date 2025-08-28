@@ -1,4 +1,3 @@
-
 // src/components/features/login-view.tsx
 'use client';
 
@@ -48,7 +47,7 @@ export default function LoginView() {
         });
         
         // Hard refresh to re-evaluate middleware and root layout
-        window.location.href = '/';
+        window.location.href = '/dashboard';
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
