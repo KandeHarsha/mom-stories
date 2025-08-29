@@ -2,6 +2,7 @@
 // src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { loginUser, loginSchema } from '@/services/auth-service';
+import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +15,14 @@ export async function POST(request: Request) {
 
     const loginResponse = await loginUser(validatedData.data);
     
+    // Set a session cookie for middleware to read
+    cookies().set('session', 'true', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7, // One week
+        path: '/',
+    });
+
     // Send the access token and profile data to the frontend
     return NextResponse.json({ 
         success: true, 

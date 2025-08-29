@@ -18,14 +18,14 @@ export default function RootLayout({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for the session token in localStorage
+    // This check runs only on the client-side
     const token = localStorage.getItem('session_token');
     setIsLoggedIn(!!token);
     setIsLoading(false);
   }, []);
 
   if (isLoading) {
-    // You can return a loading spinner here
+    // Return a loading state to prevent flash of incorrect content
     return (
        <html lang="en" suppressHydrationWarning>
         <head>
@@ -36,7 +36,6 @@ export default function RootLayout({
         </head>
         <body className="font-body antialiased">
           <div className="flex h-screen items-center justify-center">
-            {/* You might want a more sophisticated loading component */}
             Loading...
           </div>
         </body>
