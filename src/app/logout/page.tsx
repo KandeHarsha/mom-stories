@@ -1,9 +1,9 @@
+
 // src/app/logout/page.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Cookies from 'js-cookie';
 import { Loader2 } from 'lucide-react';
 
 export default function LogoutPage() {
@@ -14,10 +14,13 @@ export default function LogoutPage() {
       try {
         await fetch('/api/auth/logout', { method: 'POST' });
       } catch (error) {
-        console.error('Logout failed', error);
+        console.error('Logout API call failed', error);
       } finally {
-        Cookies.remove('session');
-        // Full page redirect to clear all state and re-run middleware
+        // Clear client-side storage
+        localStorage.removeItem('session_token');
+        localStorage.removeItem('user_profile');
+        
+        // Full page redirect to clear all state
         window.location.href = '/login';
       }
     };

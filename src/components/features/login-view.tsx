@@ -42,6 +42,12 @@ export default function LoginView() {
           throw new Error(data.error || 'Failed to login');
         }
 
+        // Save token and profile to localStorage
+        if (data.token) {
+            localStorage.setItem('session_token', data.token);
+            localStorage.setItem('user_profile', JSON.stringify(data.profile));
+        }
+
         toast({
           title: 'Login Successful',
           description: "Welcome back!",

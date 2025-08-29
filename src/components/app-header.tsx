@@ -18,7 +18,6 @@ import { useEffect, useState } from "react";
 import { getUserProfileAction } from "@/app/actions";
 import { UserProfile } from "@/services/user-service";
 import { Badge } from "./ui/badge";
-import Cookies from 'js-cookie';
 
 
 // This is a placeholder for theme switching logic.
@@ -33,20 +32,6 @@ const useTheme = () => {
     return { theme, toggleTheme };
 };
 
-// This is a placeholder for auth state.
-// In a real app, you would use a context provider to manage auth state.
-const useAuth = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    // Check if the cookie exists
-    const session = Cookies.get('session');
-    setIsLoggedIn(!!session);
-  }, []);
-  
-  return { isLoggedIn };
-}
-
 const motherhoodStages = {
     'preparation': 'Preparation',
     'pregnancy': 'Pregnancy',
@@ -57,11 +42,14 @@ const motherhoodStages = {
 
 export function AppHeader() {
   const { toggleTheme, theme } = useTheme();
-  const { isLoggedIn } = useAuth();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    if (isLoggedIn) {
+    const token = localStorage.getItem('session_token');
+    setIsLoggedIn(!!token);
+    
+    if (token) {
         const fetchUser = async () => {
             const profile = await getUserProfileAction();
             if(profile && !('error' in profile)) {
@@ -70,7 +58,7 @@ export function AppHeader() {
         }
         fetchUser();
     }
-  }, [isLoggedIn])
+  }, [])
 
   return (
     <div className="border-b w-full">
@@ -104,8 +92,14 @@ function UserNav({ user }: { user: UserProfile | null }) {
   const router = useRouter();
   
   const handleLogout = async () => {
+    // The API route will handle cookie invalidation if any
     await fetch('/api/auth/logout', { method: 'POST' });
-    Cookies.remove('session');
+    
+    // Clear client-side storage
+    localStorage.removeItem('session_token');
+    localStorage.removeItem('user_profile');
+
+    // Force a reload to the login page to clear all state.
     window.location.href = '/login';
   };
 
