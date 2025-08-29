@@ -65,7 +65,7 @@ export async function loginUser(data: LoginInput): Promise<any> {
             {
                 params: {
                     apikey: process.env.LOGINRADIUS_API_KEY,
-                    apisecret: process.env.LOGINRADIUS_API_SECRET, // Only if needed (backend)
+                    apisecret: process.env.LOGINRADIUS_API_SECRET,
                 },
 
                 headers: { 'Content-Type': 'application/json' }

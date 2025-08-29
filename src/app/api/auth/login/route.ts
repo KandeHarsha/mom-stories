@@ -16,10 +16,12 @@ export async function POST(request: Request) {
     const loginResponse = await loginUser(validatedData.data);
     
     // Set a session cookie for middleware to read
-    cookies().set('session', 'true', {
+    (await
+      // Set a session cookie for middleware to read
+      cookies()).set('session', 'true', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7, // One week
+        expires: loginResponse.expires_in || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days if expires_in not provided
         path: '/',
     });
 
