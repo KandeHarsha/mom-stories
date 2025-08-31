@@ -1,7 +1,6 @@
-
 // src/services/journal-service.ts
 import { db, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc, updateDoc, where, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export interface JournalEntry {
@@ -32,9 +31,15 @@ export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdA
     }
 }
 
-export async function updateJournalEntry(entryId: string, data: Partial<Pick<JournalEntry, 'title' | 'content'>>): Promise<void> {
+export async function updateJournalEntry(entryId: string, userId: string, data: Partial<Pick<JournalEntry, 'title' | 'content'>>): Promise<void> {
     try {
         const docRef = doc(db, 'journalEntries', entryId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists() || docSnap.data().userId !== userId) {
+            throw new Error("Unauthorized or entry not found.");
+        }
+
         await updateDoc(docRef, {
             ...data,
             updatedAt: serverTimestamp(),
@@ -45,9 +50,16 @@ export async function updateJournalEntry(entryId: string, data: Partial<Pick<Jou
     }
 }
 
-export async function deleteJournalEntry(entryId: string): Promise<void> {
+export async function deleteJournalEntry(entryId: string, userId: string): Promise<void> {
     try {
-        await deleteDoc(doc(db, 'journalEntries', entryId));
+        const docRef = doc(db, 'journalEntries', entryId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists() || docSnap.data().userId !== userId) {
+            throw new Error("Unauthorized or entry not found.");
+        }
+
+        await deleteDoc(docRef);
     } catch (e) {
         console.error("Error deleting document: ", e);
         throw new Error('Could not delete journal entry.');
@@ -75,10 +87,14 @@ export async function uploadFileAndGetURL(file: File | ArrayBuffer, userId: stri
 
 
 export async function getJournalEntries(userId: string): Promise<JournalEntry[]> {
+    console.log("userId:", userId);
+    debugger;
     try {
-        // In a real app, you would add a where("userId", "==", userId) clause.
-        // For now, we fetch all entries for the dummy user.
-        const q = query(collection(db, "journalEntries"), orderBy("createdAt", "desc"));
+        const q = query(
+            collection(db, "journalEntries"), 
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
         const querySnapshot = await getDocs(q);
         const entries: JournalEntry[] = [];
         querySnapshot.forEach((doc) => {

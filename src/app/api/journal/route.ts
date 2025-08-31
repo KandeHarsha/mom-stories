@@ -1,14 +1,24 @@
 // src/app/api/journal/route.ts
 import { NextResponse } from 'next/server';
 import { getJournalEntries, addJournalEntry, uploadFileAndGetURL } from '@/services/journal-service';
-
-// To get the user ID in a real app, you would use an authentication check.
-const DUMMY_USER_ID = 'dummy-user-id'; 
-
+import { validateAccessToken, getUserProfile } from '@/services/auth-service';
 // Get all entries
 export async function GET(request: Request) {
     try {
-        const entries = await getJournalEntries(DUMMY_USER_ID);
+        const token = request.headers.get('Authorization')?.split(' ')[1];
+        if (!token) {
+            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        }
+        
+        // const validationResponse = await validateAccessToken(token);
+        // console.log("validationResponse:", validationResponse);
+        // Check if the token is expired
+        // if (!validationResponse.expires_in || new Date(validationResponse.expires_in) < new Date()) {
+        //     return new NextResponse(JSON.stringify({ error: 'Token expired' }), { status: 401 });
+        // }
+
+        const userProfileResponse  = await getUserProfile(token);
+        const entries = await getJournalEntries(userProfileResponse.Uid);
         return new NextResponse(JSON.stringify(entries), { status: 200 });
     } catch (error) {
         console.error('Get Journal Entries Error:', error);
@@ -20,6 +30,15 @@ export async function GET(request: Request) {
 // Create a new entry
 export async function POST(request: Request) {
     try {
+        const token = request.headers.get('Authorization')?.split(' ')[1];
+        if (!token) {
+            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        }
+
+        const userProfileResponse  = await getUserProfile(token);
+        
+        const userId = userProfileResponse.Uid;
+
         const formData = await request.formData();
         const title = formData.get('title') as string;
         const content = formData.get('content') as string;
@@ -39,16 +58,16 @@ export async function POST(request: Request) {
         } = {
             title,
             content,
-            userId: DUMMY_USER_ID,
+            userId: userId,
         };
 
         if (imageFile && imageFile.size > 0) {
-             dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, DUMMY_USER_ID, 'journal-images');
+             dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, userId, 'journal-images');
         }
 
         if (voiceNoteFile && voiceNoteFile.size > 0) {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, DUMMY_USER_ID, 'journal-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, userId, 'journal-voice-notes');
         }
         
         const newEntryId = await addJournalEntry(dataToSave);

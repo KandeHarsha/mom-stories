@@ -1,4 +1,3 @@
-
 // src/components/features/journal-view.tsx
 'use client';
 
@@ -70,10 +69,19 @@ export default function JournalView() {
   const audioChunksRef = useRef<Blob[]>([]);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('session_token');
+    return {
+      'Authorization': `Bearer ${token}`,
+    };
+  };
+
   const fetchEntries = () => {
     startLoadingTransition(async () => {
       try {
-        const response = await fetch('/api/journal');
+        const response = await fetch('/api/journal', {
+          headers: getAuthHeaders(),
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch entries');
         }
@@ -192,6 +200,7 @@ export default function JournalView() {
       try {
         const response = await fetch('/api/journal', {
             method: 'POST',
+            headers: getAuthHeaders(),
             body: formData,
         });
         if (!response.ok) {
@@ -230,7 +239,10 @@ export default function JournalView() {
         try {
             const response = await fetch(`/api/journal/${selectedEntry.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                  'Content-Type': 'application/json',
+                  ...getAuthHeaders()
+                },
                 body: JSON.stringify(updatedData),
             });
             if (!response.ok) {
@@ -260,6 +272,7 @@ export default function JournalView() {
         try {
             const response = await fetch(`/api/journal/${entryId}`, {
                 method: 'DELETE',
+                 headers: getAuthHeaders(),
             });
              if (!response.ok) {
                 const errorData = await response.json();

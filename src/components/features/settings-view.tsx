@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfileAction, updateUserProfileAction } from '@/app/actions';
-import { Loader2, Settings, User, Mail } from 'lucide-react';
+import { Loader2, Settings, Mail } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type UserProfile } from '@/services/user-service';
 
@@ -30,9 +30,15 @@ export default function SettingsView() {
     const [selectedPhase, setSelectedPhase] = useState('');
 
     useEffect(() => {
+        const uid = localStorage.getItem('uid');
+        if (!uid) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not find user information. Please log in again.'});
+            return;
+        }
+
         startLoadingTransition(async () => {
             try {
-                const fetchedProfile = await getUserProfileAction();
+                const fetchedProfile = await getUserProfileAction(uid);
                 if (fetchedProfile && !('error' in fetchedProfile)) {
                     const userProfile = fetchedProfile as UserProfile;
                     setProfile(userProfile);
@@ -59,7 +65,7 @@ export default function SettingsView() {
         if (!profile || (editedName === profile.name && selectedPhase === profile.phase)) return;
         
         startTransition(async () => {
-            const result = await updateUserProfileAction({name: editedName, phase: selectedPhase});
+            const result = await updateUserProfileAction({name: editedName, phase: selectedPhase, userId: profile.id });
             if (result.error) {
                 toast({
                     variant: 'destructive',

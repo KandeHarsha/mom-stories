@@ -15,9 +15,6 @@ import { deleteMemory } from '@/ai/flows/delete-memory';
 import { getMemories } from '@/ai/flows/get-memories';
 import { type Memory } from '@/services/memory-service';
 
-
-const DUMMY_USER_ID = 'dummy-user-id'; // Use a consistent dummy user ID
-
 const promptSchema = z.object({
   stageOfMotherhood: z.string().min(1, 'Stage of motherhood is required.'),
   recentExperiences: z.string().min(1, 'Recent experiences are required.'),
@@ -67,6 +64,10 @@ export async function getSupportAnswer(formData: FormData) {
 }
 
 export async function saveJournalEntryAction(formData: FormData) {
+    const userId = formData.get('userId') as string;
+    if (!userId) {
+        return { error: 'User ID is required.' };
+    }
     const dataToSave: {
         title: string;
         content: string;
@@ -76,13 +77,13 @@ export async function saveJournalEntryAction(formData: FormData) {
     } = {
         title: formData.get('title') as string,
         content: formData.get('content') as string,
-        userId: DUMMY_USER_ID,
+        userId: userId,
     };
 
     const imageFile = formData.get('picture') as File | null;
     if (imageFile && imageFile.size > 0 && imageFile.name) {
         try {
-            dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, DUMMY_USER_ID, 'journal-images');
+            dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, userId, 'journal-images');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Upload error in action:", errorMessage);
@@ -94,7 +95,7 @@ export async function saveJournalEntryAction(formData: FormData) {
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, DUMMY_USER_ID, 'journal-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, userId, 'journal-voice-notes');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Voice note upload error in action:", errorMessage);
@@ -121,9 +122,6 @@ export async function updateJournalEntryAction(entryId: string, formData: FormDa
         content: formData.get('content') as string,
     };
     
-    // Note: File updating is not implemented in this version for simplicity.
-    // To implement it, you would check for new files, upload them, and update the URLs.
-
     try {
         await updateJournalEntry(entryId, dataToUpdate);
         return { success: true };
@@ -149,9 +147,12 @@ export async function deleteJournalEntryAction(entryId: string) {
     }
 }
 
-export async function getUserProfileAction() {
+export async function getUserProfileAction(userId: string) {
+    if (!userId) {
+        return { error: 'User ID must be provided.' };
+    }
     try {
-        const profile = await getUserProfile(DUMMY_USER_ID);
+        const profile = await getUserProfile(userId);
         return profile;
     } catch(e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
@@ -163,16 +164,17 @@ export async function getUserProfileAction() {
 const profileUpdateSchema = z.object({
     name: z.string().min(1, 'Name cannot be empty.'),
     phase: z.string().min(1, 'Phase cannot be empty'),
+    userId: z.string().min(1, 'User ID is required.'),
 });
 
-export async function updateUserProfileAction(data: {name: string, phase: string}) {
+export async function updateUserProfileAction(data: {name: string, phase: string, userId: string}) {
     const validatedData = profileUpdateSchema.safeParse(data);
      if (!validatedData.success) {
         return { error: validatedData.error.errors.map(e => e.message).join(', ') };
     }
 
     try {
-        await updateUserProfile(DUMMY_USER_ID, { name: validatedData.data.name, phase: validatedData.data.phase as any });
+        await updateUserProfile(validatedData.data.userId, { name: validatedData.data.name, phase: validatedData.data.phase as any });
         return { success: true };
     } catch(e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
@@ -184,6 +186,10 @@ export async function updateUserProfileAction(data: {name: string, phase: string
 
 // Memory Box Actions
 export async function saveMemoryAction(formData: FormData) {
+    const userId = formData.get('userId') as string;
+     if (!userId) {
+        return { error: 'User ID is required.' };
+    }
     const dataToSave: {
         title: string;
         text?: string;
@@ -193,13 +199,13 @@ export async function saveMemoryAction(formData: FormData) {
     } = {
         title: formData.get('title') as string,
         text: formData.get('text') as string,
-        userId: DUMMY_USER_ID,
+        userId: userId,
     };
 
     const imageFile = formData.get('image') as File | null;
     if (imageFile && imageFile.size > 0) {
         try {
-            dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, DUMMY_USER_ID, 'memories-images');
+            dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, userId, 'memories-images');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             return { error: `Failed to upload image: ${errorMessage}` };
@@ -210,7 +216,7 @@ export async function saveMemoryAction(formData: FormData) {
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
             const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, DUMMY_USER_ID, 'memories-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, userId, 'memories-voice-notes');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             return { error: `Failed to upload voice note: ${errorMessage}` };

@@ -42,11 +42,14 @@ export default function LoginView() {
           throw new Error(data.error || 'Failed to login');
         }
 
-        // Save token and profile to localStorage
+        // Save token and UID to localStorage
         if (data.token) {
             localStorage.setItem('session_token', data.token);
-            localStorage.setItem('user_profile', JSON.stringify(data.profile));
         }
+        if (data.profile?.Uid) {
+            localStorage.setItem('uid', data.profile.Uid);
+        }
+
 
         toast({
           title: 'Login Successful',
