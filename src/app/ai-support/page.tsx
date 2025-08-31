@@ -1,5 +1,6 @@
 'use client';
 
+import AppLayout from '@/components/app-layout';
 import AiSupportView from '@/components/features/ai-support-view';
 import { Suspense } from 'react';
 
@@ -10,10 +11,12 @@ function AiSupportLoading() {
 
 export default function AiSupportPage() {
   return (
-     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <Suspense fallback={<AiSupportLoading/>}>
-            <AiSupportView />
-        </Suspense>
-    </div>
+    <AppLayout>
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            <Suspense fallback={<AiSupportLoading/>}>
+                <AiSupportView />
+            </Suspense>
+        </div>
+    </AppLayout>
   );
 }

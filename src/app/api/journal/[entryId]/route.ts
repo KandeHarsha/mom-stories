@@ -1,21 +1,10 @@
 // src/app/api/journal/[entryId]/route.ts
 import { NextResponse } from 'next/server';
 import { updateJournalEntry, deleteJournalEntry } from '@/services/journal-service';
-import { getUserProfile, validateAccessToken } from '@/services/auth-service';
 
 // Update an entry
 export async function PUT(request: Request, { params }: { params: { entryId: string } }) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-        }
-
-        const userProfileResponse = await getUserProfile(token);
-        if (!userProfileResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
-        }
-        
         const entryId = params.entryId;
         if (!entryId) {
             return new NextResponse(JSON.stringify({ error: 'Entry ID is required.' }), { status: 400 });
@@ -23,8 +12,7 @@ export async function PUT(request: Request, { params }: { params: { entryId: str
         
         const data = await request.json();
 
-        // Pass UID to ensure user can only update their own entry. This logic would be inside updateJournalEntry.
-        await updateJournalEntry(entryId, userProfileResponse.Uid, {
+        await updateJournalEntry(entryId, {
             title: data.title,
             content: data.content,
         });
@@ -42,23 +30,12 @@ export async function PUT(request: Request, { params }: { params: { entryId: str
 // Delete an entry
 export async function DELETE(request: Request, { params }: { params: { entryId: string } }) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
-        }
-
-        const userProfileResponse = await getUserProfile(token);
-        if (!userProfileResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
-        }
-
         const entryId = params.entryId;
         if (!entryId) {
             return new NextResponse(JSON.stringify({ error: 'Entry ID is required.' }), { status: 400 });
         }
 
-        // Pass UID to ensure user can only delete their own entry.
-        await deleteJournalEntry(entryId, userProfileResponse.Uid);
+        await deleteJournalEntry(entryId);
 
         return new NextResponse(JSON.stringify({ success: true }), { status: 200 });
     } catch (error) {

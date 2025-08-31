@@ -1,4 +1,3 @@
-
 // src/services/auth-service.ts
 import { auth } from '@/lib/firebase';
 import { 
@@ -29,7 +28,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export async function registerUser(data: RegisterInput): Promise<any> {
     try {
         const response = await axios.post(
-            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/manage/account`,
+            'https://api.loginradius.com/identity/v2/manage/account',
             {
                 Email: [{ Type: "Primary", Value: data.email }],
                 Password: data.password,
@@ -58,7 +57,7 @@ export async function registerUser(data: RegisterInput): Promise<any> {
 export async function loginUser(data: LoginInput): Promise<any> {
     try {
         const response = await axios.post(
-            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/login`,
+            'https://api.loginradius.com/identity/v2/auth/login',
             {
                 email: data.email,
                 password: data.password
@@ -75,68 +74,6 @@ export async function loginUser(data: LoginInput): Promise<any> {
         throw new Error(error.response?.data?.Description || 'Login failed.');
     }
 }
-
-export async function validateAccessToken(token: string): Promise<any> {
-    try {
-        const response = await axios.get(
-             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/access_token/validate`,
-             {
-                params: {
-                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_API_KEY,
-                },
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-             }
-        );
-        return response.data;
-    } catch (error: any) {
-         throw new Error(error.response?.data?.Description || 'Token validation failed.');
-    }
-}
-
-export async function getUserProfile(accessToken: string): Promise<any> {
-    try {
-        const response = await axios.get(
-            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
-            {
-                params: {
-                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_API_KEY
-                },
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        return response.data; // Returns user profile data
-    } catch (error: any) {
-        throw new Error(error.response?.data?.Description || 'Failed to fetch user profile.');
-    }
-}
-
-export async function updateUserProfile(accessToken: string, profileFields: Record<string, any>): Promise<any> {
-    try {
-        const response = await axios.put(
-            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
-            profileFields,
-            {
-                params: {
-                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_API_KEY
-                },
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        return response.data; // Updated user profile data
-    } catch (error: any) {
-        throw new Error(error.response?.data?.Description || 'Failed to update user profile.');
-    }
-}
-
 
 export async function logoutUser() {
     try {

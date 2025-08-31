@@ -1,4 +1,3 @@
-
 // src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -10,11 +9,14 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('session');
   const { pathname } = request.nextUrl;
 
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
+  // Allow root path to be handled by the page's useEffect
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
 
   // If the user is trying to access a protected route and doesn't have a session cookie,
   // redirect them to the login page.
-  if (isProtectedRoute && !sessionCookie) {
+  if (protectedRoutes.includes(pathname) && !sessionCookie) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -23,7 +25,7 @@ export function middleware(request: NextRequest) {
   if (sessionCookie && authRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
-  
+
   return NextResponse.next();
 }
 

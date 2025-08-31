@@ -1,5 +1,3 @@
-
-// src/app/logout/page.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -18,7 +16,7 @@ export default function LogoutPage() {
       } finally {
         // Clear client-side storage
         localStorage.removeItem('session_token');
-        localStorage.removeItem('uid');
+        localStorage.removeItem('user_profile');
         
         // Full page redirect to clear all state
         window.location.href = '/login';

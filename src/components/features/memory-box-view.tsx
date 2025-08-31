@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useTransition, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -53,7 +52,6 @@ export default function MemoryBoxView() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isNewMemoryOpen, setIsNewMemoryOpen] = useState(false);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   // Image state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -67,10 +65,10 @@ export default function MemoryBoxView() {
   const audioChunksRef = useRef<Blob[]>([]);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
 
-  const fetchMemories = (uid: string) => {
+  const fetchMemories = () => {
     startLoadingTransition(async () => {
       try {
-        const fetchedMemories = await getMemoriesAction(uid);
+        const fetchedMemories = await getMemoriesAction();
         setMemories(fetchedMemories);
       } catch (error) {
         toast({
@@ -83,11 +81,7 @@ export default function MemoryBoxView() {
   };
 
   useEffect(() => {
-    const uid = localStorage.getItem('uid');
-    setUserId(uid);
-    if (uid) {
-        fetchMemories(uid);
-    }
+    fetchMemories();
   }, []);
 
   useEffect(() => {
@@ -175,11 +169,6 @@ export default function MemoryBoxView() {
   };
 
   const handleSave = (formData: FormData) => {
-    if (!userId) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to save a memory.'});
-        return;
-    }
-    formData.append('userId', userId);
     if(audioBlob){
       formData.append('voiceNote', audioBlob, 'voice-note.webm');
     }
@@ -200,7 +189,7 @@ export default function MemoryBoxView() {
           description: 'Your memory has been saved successfully.',
         });
         resetForm();
-        if (userId) fetchMemories(userId);
+        fetchMemories();
         setIsNewMemoryOpen(false); // Close the dialog
       }
     });
@@ -220,7 +209,7 @@ export default function MemoryBoxView() {
                 title: 'Memory Deleted',
                 description: 'Your memory has been deleted.',
             });
-            if (userId) fetchMemories(userId);
+            fetchMemories();
             setSelectedMemory(null);
         }
     });

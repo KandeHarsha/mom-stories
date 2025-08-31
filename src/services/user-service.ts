@@ -1,6 +1,6 @@
 // src/services/user-service.ts
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
 export interface UserProfile {
     id: string;
@@ -9,10 +9,6 @@ export interface UserProfile {
     phase: 'preparation' | 'pregnancy' | 'fourth-trimester' | 'beyond' | '';
     updatedAt: any;
     createdAt: any;
-    // From LoginRadius
-    Uid: string;
-    FirstName: string;
-    Email: { Type: string, Value: string }[];
 }
 
 export async function createUserProfile(userId: string, data: { name: string, email: string }) {
@@ -37,25 +33,16 @@ export async function createUserProfile(userId: string, data: { name: string, em
 
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    if (!userId) return null;
-    
     try {
         const docRef = doc(db, 'userProfiles', userId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            // Convert Timestamp to a serializable format (ISO string)
-            const profileData = {
-                id: docSnap.id,
-                ...data,
-                updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-                createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-            } as UserProfile;
-            return profileData;
+            return { id: docSnap.id, ...docSnap.data() } as UserProfile;
         } else {
-             // If firestore profile doesn't exist, maybe it should be created?
-             // For now, returning null is safer.
+            // It might be better to create a profile here if one doesn't exist.
+            // For now, returning null is safer.
+            console.warn(`No profile found for userId: ${userId}`);
             return null;
         }
     } catch (e) {
@@ -64,10 +51,13 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     }
 }
 
-export async function updateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'Uid' | 'Email'>>) {
+export async function updateUserProfile(userId: string, data: Partial<UserProfile>) {
     try {
         const docRef = doc(db, 'userProfiles', userId);
-        await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+        await updateDoc(docRef, {
+            ...data,
+            updatedAt: serverTimestamp(),
+        });
     } catch (e) {
         console.error("Error updating user profile: ", e);
         throw new Error('Could not update user profile.');

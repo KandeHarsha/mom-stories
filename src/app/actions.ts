@@ -7,7 +7,6 @@ import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
 import { updateJournalEntry } from '@/ai/flows/update-journal-entry';
 import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
 import { uploadFileAndGetURL, getJournalEntries } from '@/services/journal-service';
-import { getUserProfile, updateUserProfile } from '@/services/user-service';
 import { z } from 'zod';
 import { saveMemory } from '@/ai/flows/save-memory';
 import { deleteMemory } from '@/ai/flows/delete-memory';
@@ -63,10 +62,7 @@ export async function getSupportAnswer(formData: FormData) {
 }
 
 export async function saveJournalEntryAction(formData: FormData) {
-    const userId = formData.get('userId') as string;
-    if (!userId) {
-        return { error: 'User ID is required.' };
-    }
+    const userId = 'DUMMY_USER_ID'; // Replace with actual user ID from session
     const dataToSave: {
         title: string;
         content: string;
@@ -112,6 +108,12 @@ export async function saveJournalEntryAction(formData: FormData) {
     }
 }
 
+export async function getJournalEntriesAction() {
+    // In a real app, you would get the userId from the user's session
+    const userId = 'DUMMY_USER_ID'; 
+    return await getJournalEntries(userId);
+}
+
 export async function updateJournalEntryAction(entryId: string, formData: FormData) {
     const dataToUpdate: {
         title: string;
@@ -146,51 +148,9 @@ export async function deleteJournalEntryAction(entryId: string) {
     }
 }
 
-export async function getUserProfileAction(userId: string) {
-    if (!userId) {
-        return { error: 'User ID must be provided.' };
-    }
-    try {
-        const profile = await getUserProfile(userId);
-        return profile;
-    } catch(e) {
-        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
-        console.error("Get profile error in action:", errorMessage);
-        return { error: 'Failed to get user profile.' };
-    }
-}
-
-const profileUpdateSchema = z.object({
-    name: z.string().min(1, 'Name cannot be empty.'),
-    phase: z.string().min(1, 'Phase cannot be empty'),
-    userId: z.string().min(1, 'User ID is required.'),
-});
-
-export async function updateUserProfileAction(data: {name: string, phase: string, userId: string}) {
-    const validatedData = profileUpdateSchema.safeParse(data);
-     if (!validatedData.success) {
-        return { error: validatedData.error.errors.map(e => e.message).join(', ') };
-    }
-
-    try {
-        // Here we can update both firestore and loginradius if needed
-        // For now just firestore as per existing setup
-        await updateUserProfile(validatedData.data.userId, { name: validatedData.data.name, phase: validatedData.data.phase as any });
-        return { success: true };
-    } catch(e) {
-        const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
-        console.error("Update profile error in action:", errorMessage);
-        return { error: 'Failed to update profile.' };
-    }
-}
-
-
 // Memory Box Actions
 export async function saveMemoryAction(formData: FormData) {
-    const userId = formData.get('userId') as string;
-     if (!userId) {
-        return { error: 'User ID is required.' };
-    }
+    const userId = 'DUMMY_USER_ID'; // Replace with actual user ID from session
     const dataToSave: {
         title: string;
         text?: string;
@@ -233,7 +193,8 @@ export async function saveMemoryAction(formData: FormData) {
     }
 }
 
-export async function getMemoriesAction(userId: string): Promise<Memory[]> {
+export async function getMemoriesAction(): Promise<Memory[]> {
+    const userId = 'DUMMY_USER_ID'; // Replace with actual user ID from session
     return await getMemories(userId);
 }
 

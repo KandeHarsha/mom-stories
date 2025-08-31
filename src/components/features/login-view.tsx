@@ -1,5 +1,3 @@
-
-// src/components/features/login-view.tsx
 'use client';
 
 import React, { useState, useTransition } from 'react';
@@ -18,7 +16,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/context/user-context';
 
 export default function LoginView() {
   const [email, setEmail] = useState('');
@@ -26,17 +23,26 @@ export default function LoginView() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
-  const { login } = useUser();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
       try {
-        const result = await login(email, password);
-        
-        if (result.error) {
-           throw new Error(result.error);
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to login');
         }
+
+        // Store token and profile in local storage
+        localStorage.setItem('session_token', data.access_token);
+        localStorage.setItem('user_profile', JSON.stringify(data.profile));
 
         toast({
           title: 'Login Successful',

@@ -1,4 +1,3 @@
-
 // src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { loginUser, loginSchema } from '@/services/auth-service';
@@ -16,13 +15,10 @@ export async function POST(request: Request) {
     const loginResponse = await loginUser(validatedData.data);
     
     // Set a session cookie for middleware to read
-    (await
-      // Set a session cookie for middleware to read
-      cookies()).set('session', 'true', {
+    cookies().set('session', 'true', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 7, // One week
-        // expires: loginResponse.expires_in || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days if expires_in not provided
         path: '/',
     });
 
@@ -30,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
         success: true, 
         message: 'Logged in successfully.',
-        token: loginResponse.access_token,
+        access_token: loginResponse.access_token,
         profile: loginResponse.Profile
     }, { status: 200 });
 

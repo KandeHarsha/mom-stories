@@ -1,18 +1,15 @@
 // src/components/features/settings-view.tsx
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { getUserProfileAction, updateUserProfileAction } from '@/app/actions';
-import { Loader2, Settings, Mail } from 'lucide-react';
+import { Loader2, Settings } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type UserProfile } from '@/services/user-service';
-import { useUser } from '@/context/user-context';
 
 const motherhoodStages = [
     { value: 'preparation', label: 'Preparation / Trying to Conceive' },
@@ -23,48 +20,43 @@ const motherhoodStages = [
 
 export default function SettingsView() {
     const { toast } = useToast();
-    const [isPending, startTransition] = useTransition();
-    const { user, isLoading: isUserLoading, setUser } = useUser();
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [profile, setProfile] = useState<any>(null);
 
     const [editedName, setEditedName] = useState('');
     const [selectedPhase, setSelectedPhase] = useState('');
 
-     useEffect(() => {
-        if (user) {
-            setProfile(user);
-            setEditedName(user.FirstName || user.name || '');
-            setSelectedPhase(user.phase || '');
+    useEffect(() => {
+        const profileStr = localStorage.getItem('user_profile');
+        if (profileStr) {
+            const p = JSON.parse(profileStr);
+            setProfile(p);
+            setEditedName(p.FirstName || '');
+            setSelectedPhase(p.phase || '');
         }
-    }, [user]);
+        setIsLoading(false);
+    }, []);
 
     const handleSave = () => {
-        if (!profile || !user || (editedName === (user.FirstName || user.name) && selectedPhase === user.phase)) return;
+        if (!profile || (editedName === profile.FirstName && selectedPhase === profile.phase)) return;
         
-        startTransition(async () => {
-            const result = await updateUserProfileAction({name: editedName, phase: selectedPhase, userId: user.Uid });
-            if (result.error) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Oh no! Something went wrong.',
-                    description: result.error,
-                });
-            } else if (result.success) {
-                const updatedProfile = { ...user, FirstName: editedName, name: editedName, phase: selectedPhase as any };
-                setUser(updatedProfile);
-                setProfile(updatedProfile);
-                toast({
-                    title: 'Profile Updated!',
-                    description: 'Your profile details have been updated.',
-                });
-            }
-        });
+        setIsSaving(true);
+        // Here you would call an API to update the profile
+        // For demonstration, we'll simulate an API call and update localStorage
+        setTimeout(() => {
+            const updatedProfile = { ...profile, FirstName: editedName, phase: selectedPhase };
+            localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+            setProfile(updatedProfile);
+            setIsSaving(false);
+            toast({
+                title: 'Profile Updated!',
+                description: 'Your profile details have been updated.',
+            });
+        }, 1000);
     };
-
-    const hasChanges = profile ? (editedName.trim() !== (profile.FirstName || profile.name) || selectedPhase !== profile.phase) && editedName.trim().length > 0 : false;
-    const isLoading = isUserLoading || !profile;
-    const email = user?.Email?.[0]?.Value || user?.email || 'No email found';
-
+    
+    const hasChanges = profile ? (editedName !== profile.FirstName || selectedPhase !== profile.phase) : false;
 
     return (
         <div>
@@ -97,13 +89,6 @@ export default function SettingsView() {
                                 <Input id="name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
                             </div>
                             <div>
-                                <Label>Email Address (read-only)</Label>
-                                <p className="text-md flex items-center gap-2 text-muted-foreground p-2 bg-secondary rounded-md h-10">
-                                  <Mail className="h-4 w-4"/>
-                                  {email}
-                                </p>
-                            </div>
-                            <div>
                                 <Label htmlFor="stage">Update Your Stage</Label>
                                 <Select onValueChange={setSelectedPhase} value={selectedPhase}>
                                     <SelectTrigger id="stage">
@@ -118,8 +103,8 @@ export default function SettingsView() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                             <Button onClick={handleSave} disabled={isPending || !hasChanges}>
-                                {isPending ? (
+                             <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+                                {isSaving ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     Saving...
@@ -130,7 +115,7 @@ export default function SettingsView() {
                             </Button>
                         </div>
                     ) : (
-                        <p>Could not load profile.</p>
+                        <p>Could not load profile. Please log in again.</p>
                     )}
                 </CardContent>
             </Card>
