@@ -1,3 +1,4 @@
+
 // src/services/auth-service.ts
 import { auth } from '@/lib/firebase';
 import { 
@@ -37,7 +38,7 @@ export async function registerUser(data: RegisterInput): Promise<any> {
             },
             {
                 params: {
-                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_API_KEY,
+                    apikey: process.env.LOGINRADIUS_API_KEY,
                     apisecret: process.env.LOGINRADIUS_API_SECRET,
                 },
 
