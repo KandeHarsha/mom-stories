@@ -69,6 +69,7 @@ export function AppHeader() {
 function UserNav() {
   const router = useRouter();
   const { user, logout } = useUser();
+  console.log("user", user)
   
   const handleLogout = async () => {
     await logout();

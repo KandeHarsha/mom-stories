@@ -2,16 +2,14 @@
 // src/components/features/profile-view.tsx
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { getUserProfileAction } from '@/app/actions';
-import { Loader2, User, Mail, Heart } from 'lucide-react';
+import { User, Mail, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type UserProfile } from '@/services/user-service';
 import { useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
+import { useUser } from '@/context/user-context';
 
 const motherhoodStages = {
     'preparation': 'Preparation / Trying to Conceive',
@@ -22,46 +20,18 @@ const motherhoodStages = {
 };
 
 export default function ProfileView() {
-    const { toast } = useToast();
-    const [isLoading, startLoadingTransition] = useTransition();
-    const [profile, setProfile] = useState<UserProfile | null>(null);
     const router = useRouter();
+    const { user, isLoading } = useUser();
 
-    useEffect(() => {
-        const uid = localStorage.getItem('uid');
-        if (!uid) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not find user information. Please log in again.'});
-            return;
-        }
-
-        startLoadingTransition(async () => {
-            try {
-                const fetchedProfile = await getUserProfileAction(uid);
-                if (fetchedProfile && !('error' in fetchedProfile)) {
-                    setProfile(fetchedProfile as UserProfile);
-                } else {
-                     toast({
-                        variant: 'destructive',
-                        title: 'Error',
-                        description: (fetchedProfile as any)?.error || 'Failed to load your profile.',
-                    });
-                }
-            } catch (error) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'Failed to load your profile.',
-                });
-            }
-        });
-    }, [toast]);
+    // The user object from context might have a different shape for email, let's normalize it.
+    const email = user?.Email?.[0]?.Value || user?.email || 'No email found';
 
     return (
         <div>
             <div className="mb-6">
                 <h2 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-2">
                     <User className="h-8 w-8 text-primary"/>
-                    {isLoading ? <Skeleton className="h-8 w-48" /> : `${profile?.name || 'User'}'s Profile`}
+                    {isLoading ? <Skeleton className="h-8 w-48" /> : `${user?.FirstName || user?.name || 'User'}'s Profile`}
                 </h2>
                 <p className="text-muted-foreground mt-1">Manage your personal information and preferences in settings.</p>
             </div>
@@ -69,7 +39,7 @@ export default function ProfileView() {
                 <CardHeader>
                     <CardTitle>Your Details</CardTitle>
                     <CardDescription>
-                        This is your personal information. You can update it in the settings page.
+                        This is your personal information. You can update it on the settings page.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -88,27 +58,27 @@ export default function ProfileView() {
                                 <Skeleton className="h-8 w-full" />
                             </div>
                         </div>
-                    ) : profile ? (
+                    ) : user ? (
                         <div className="space-y-4 pt-6">
                             <div>
                                 <Label>Your Name</Label>
                                 <p className="text-md flex items-center gap-2 text-foreground p-2 bg-secondary rounded-md">
                                   <User className="h-4 w-4 text-muted-foreground"/>
-                                  {profile.name}
+                                  {user.FirstName || user.name}
                                 </p>
                             </div>
                             <div>
                                 <Label>Email Address</Label>
                                 <p className="text-md flex items-center gap-2 text-foreground p-2 bg-secondary rounded-md">
                                   <Mail className="h-4 w-4 text-muted-foreground"/>
-                                  {profile.email}
+                                  {email}
                                 </p>
                             </div>
                             <div>
                                 <Label>Your Current Stage</Label>
                                  <p className="text-md flex items-center gap-2 text-foreground p-2 bg-secondary rounded-md">
                                   <Heart className="h-4 w-4 text-muted-foreground"/>
-                                  {motherhoodStages[profile.phase || '']}
+                                  {motherhoodStages[user.phase as keyof typeof motherhoodStages] || 'Not specified'}
                                 </p>
                             </div>
                              <Button onClick={() => router.push('/settings')}>
