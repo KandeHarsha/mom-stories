@@ -1,3 +1,4 @@
+
 // src/components/features/profile-view.tsx
 'use client';
 
@@ -27,9 +28,15 @@ export default function ProfileView() {
     const router = useRouter();
 
     useEffect(() => {
+        const uid = localStorage.getItem('uid');
+        if (!uid) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not find user information. Please log in again.'});
+            return;
+        }
+
         startLoadingTransition(async () => {
             try {
-                const fetchedProfile = await getUserProfileAction();
+                const fetchedProfile = await getUserProfileAction(uid);
                 if (fetchedProfile && !('error' in fetchedProfile)) {
                     setProfile(fetchedProfile as UserProfile);
                 } else {

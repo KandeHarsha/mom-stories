@@ -47,11 +47,12 @@ export function AppHeader() {
 
   useEffect(() => {
     const token = localStorage.getItem('session_token');
+    const uid = localStorage.getItem('uid');
     setIsLoggedIn(!!token);
     
-    if (token) {
+    if (token && uid) {
         const fetchUser = async () => {
-            const profile = await getUserProfileAction();
+            const profile = await getUserProfileAction(uid);
             if(profile && !('error' in profile)) {
                 setUser(profile as UserProfile);
             }
@@ -97,7 +98,7 @@ function UserNav({ user }: { user: UserProfile | null }) {
     
     // Clear client-side storage
     localStorage.removeItem('session_token');
-    localStorage.removeItem('user_profile');
+    localStorage.removeItem('uid');
 
     // Force a reload to the login page to clear all state.
     window.location.href = '/login';

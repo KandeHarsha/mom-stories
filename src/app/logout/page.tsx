@@ -18,7 +18,7 @@ export default function LogoutPage() {
       } finally {
         // Clear client-side storage
         localStorage.removeItem('session_token');
-        localStorage.removeItem('user_profile');
+        localStorage.removeItem('uid');
         
         // Full page redirect to clear all state
         window.location.href = '/login';
