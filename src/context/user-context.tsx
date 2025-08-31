@@ -98,40 +98,29 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const authRoutes = ['/login', '/register'];
   const isAuthRoute = authRoutes.includes(pathname);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (isLoading) return; // Don't redirect until session check is complete
+
+    // If user is not logged in and not on an auth route, redirect to login
+    if (!isLoggedIn && !isAuthRoute) {
+      router.push('/login');
+    }
+
+    // If user is logged in and on an auth route, redirect to dashboard
+    if (isLoggedIn && isAuthRoute) {
+      router.push('/dashboard');
+    }
+  }, [isLoggedIn, isAuthRoute, router, isLoading]);
+
+
+  if (isLoading || (!isLoggedIn && !isAuthRoute) || (isLoggedIn && isAuthRoute)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
-
-  // If user is not logged in and not on an auth route, redirect to login
-  if (!isLoggedIn && !isAuthRoute) {
-    // Check if window is defined to avoid server-side redirects in this case
-    if (typeof window !== 'undefined') {
-      router.push('/login');
-    }
-    // Return loading state while redirecting
-    return (
-        <div className="flex h-screen items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
-  // If user is logged in and on an auth route, redirect to dashboard
-  if (isLoggedIn && isAuthRoute) {
-     if (typeof window !== 'undefined') {
-        router.push('/dashboard');
-     }
-     return (
-        <div className="flex h-screen items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
+  
   return (
     <UserContext.Provider value={{ user, isLoggedIn, isLoading, login, logout, setUser }}>
        {isLoggedIn ? <AppLayout>{children}</AppLayout> : children}
