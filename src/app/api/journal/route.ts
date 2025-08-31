@@ -24,7 +24,6 @@ export async function POST(request: Request) {
         const title = formData.get('title') as string;
         const content = formData.get('content') as string;
         const imageFile = formData.get('picture') as File | null;
-        console.log("imageFile:", imageFile);
         const voiceNoteFile = formData.get('voiceNote') as File | null;
         
         if(!title || !content) {

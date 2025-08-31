@@ -27,7 +27,6 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 
 export async function registerUser(data: RegisterInput): Promise<any> {
-    console.log("registerUser", data);
     try {
         const response = await axios.post(
             'https://api.loginradius.com/identity/v2/manage/account',
@@ -46,7 +45,6 @@ export async function registerUser(data: RegisterInput): Promise<any> {
                 headers: { 'Content-Type': 'application/json' }
             }
         );
-        console.log("response", response);
         return response.data;
     } catch (error: any) {
         throw new Error(error.response?.data?.Description || 'Registration failed.');

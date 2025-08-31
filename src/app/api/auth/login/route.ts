@@ -21,7 +21,8 @@ export async function POST(request: Request) {
       cookies()).set('session', 'true', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        expires: loginResponse.expires_in || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days if expires_in not provided
+        maxAge: 60 * 60 * 24 * 7, // One week
+        // expires: loginResponse.expires_in || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days if expires_in not provided
         path: '/',
     });
 
