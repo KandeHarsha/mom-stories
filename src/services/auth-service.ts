@@ -114,6 +114,27 @@ export async function getUserProfile(accessToken: string): Promise<any> {
     }
 }
 
+export async function updateUserProfile(accessToken: string, profileFields: Record<string, any>): Promise<any> {
+    try {
+        const response = await axios.put(
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
+            profileFields,
+            {
+                params: {
+                    apikey: process.env.LOGINRADIUS_API_KEY
+                },
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        return response.data; // Updated user profile data
+    } catch (error: any) {
+        throw new Error(error.response?.data?.Description || 'Failed to update user profile.');
+    }
+}
+
 
 export async function logoutUser() {
     try {

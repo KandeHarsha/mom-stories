@@ -10,6 +10,10 @@ export interface UserProfile {
     phase: 'preparation' | 'pregnancy' | 'fourth-trimester' | 'beyond' | '';
     updatedAt: any;
     createdAt: any;
+    // From LoginRadius
+    Uid: string;
+    FirstName: string;
+    Email: { Type: string, Value: string }[];
 }
 
 export async function createUserProfile(userId: string, data: { name: string, email: string }) {
@@ -29,11 +33,10 @@ export async function createUserProfile(userId: string, data: { name: string, em
 
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-    // If no userId is provided, fallback to dummy for now. This will be removed later.
-    const finalUserId = userId || 'dummy-user-id';
+    if (!userId) return null;
     
     try {
-        const docRef = doc(db, 'userProfiles', finalUserId);
+        const docRef = doc(db, 'userProfiles', userId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -41,26 +44,24 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             // Convert Timestamp to a serializable format (ISO string)
             const profileData = {
                 id: docSnap.id,
-                name: data.name || 'Mother', // fallback for existing profiles
-                email: data.email || 'mom@example.com', // fallback for existing profiles
                 ...data,
                 updatedAt: (data.updatedAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+                createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
             } as UserProfile;
             return profileData;
         } else {
-            // For the dummy user, create a default profile if it doesn't exist
-            if (finalUserId === 'dummy-user-id') {
-                const defaultProfile = { 
-                    name: 'Sara',
-                    email: 'sara@example.com',
-                    phase: 'pregnancy', 
-                    updatedAt: serverTimestamp(),
-                    createdAt: serverTimestamp(),
-                };
-                await setDoc(docRef, defaultProfile);
-                return { id: finalUserId, ...defaultProfile, updatedAt: new Date().toISOString(), createdAt: new Date().toISOString() };
-            }
-            return null; // For real users, if no profile exists, return null.
+            console.log(`No profile found for user ${userId}, creating one.`);
+            // This part might need to be adjusted based on where you get the initial name/email
+            // For now, it will create a placeholder.
+            const defaultProfile = { 
+                name: 'New User',
+                email: 'newuser@example.com',
+                phase: '', 
+                updatedAt: serverTimestamp(),
+                createdAt: serverTimestamp(),
+            };
+            await setDoc(docRef, defaultProfile);
+            return { id: userId, ...defaultProfile, updatedAt: new Date().toISOString(), createdAt: new Date().toISOString() } as UserProfile;
         }
     } catch (e) {
         console.error("Error getting user profile: ", e);
@@ -68,7 +69,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     }
 }
 
-export async function updateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id'>>) {
+export async function updateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'Uid' | 'Email'>>) {
     try {
         const docRef = doc(db, 'userProfiles', userId);
         await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });

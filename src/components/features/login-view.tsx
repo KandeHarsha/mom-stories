@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/context/user-context';
 
 export default function LoginView() {
   const [email, setEmail] = useState('');
@@ -25,31 +26,17 @@ export default function LoginView() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
+  const { login } = useUser();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
       try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
+        const result = await login(email, password);
         
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to login');
+        if (result.error) {
+           throw new Error(result.error);
         }
-
-        // Save token and UID to localStorage
-        if (data.token) {
-            localStorage.setItem('session_token', data.token);
-        }
-        if (data.profile?.Uid) {
-            localStorage.setItem('uid', data.profile.Uid);
-        }
-
 
         toast({
           title: 'Login Successful',
