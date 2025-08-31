@@ -1,6 +1,6 @@
 
 'use client';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,12 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun, LogIn } from "lucide-react";
+import { Moon, Sun, LogIn, Heart, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getUserProfileAction } from "@/app/actions";
 import { UserProfile } from "@/services/user-service";
+import { Badge } from "./ui/badge";
+
 
 // This is a placeholder for theme switching logic.
 // In a real app, you would use a theme provider (e.g., next-themes).
@@ -30,27 +32,49 @@ const useTheme = () => {
     return { theme, toggleTheme };
 };
 
-// This is a placeholder for auth state.
-// In a real app, you would use a context provider to manage auth state.
-const useAuth = () => {
-  return {
-    isLoggedIn: true, // Set to true to show user nav for now
-  }
-}
+const motherhoodStages = {
+    'preparation': 'Preparation',
+    'pregnancy': 'Pregnancy',
+    'fourth-trimester': 'Fourth Trimester',
+    'beyond': 'Beyond',
+    '': 'Not specified'
+};
 
 export function AppHeader() {
   const { toggleTheme, theme } = useTheme();
-  const { isLoggedIn } = useAuth();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('session_token');
+    setIsLoggedIn(!!token);
+    
+    if (token) {
+        const fetchUser = async () => {
+            const profile = await getUserProfileAction();
+            if(profile && !('error' in profile)) {
+                setUser(profile as UserProfile);
+            }
+        }
+        fetchUser();
+    }
+  }, [])
 
   return (
-    <div className="border-b">
+    <div className="border-b w-full">
       <div className="flex h-16 items-center px-4 md:px-8">
+         {isLoggedIn && user && user.phase && (
+            <Badge variant="outline" className="hidden sm:flex items-center gap-2">
+              <Heart className="h-4 w-4 text-primary" />
+              <span>{motherhoodStages[user.phase]}</span>
+            </Badge>
+          )}
         <div className="ml-auto flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
-          {isLoggedIn ? <UserNav /> : (
+          {isLoggedIn ? <UserNav user={user} /> : (
             <Button asChild>
               <Link href="/login">
                 <LogIn className="mr-2 h-4 w-4" />
@@ -64,20 +88,21 @@ export function AppHeader() {
   );
 }
 
-function UserNav() {
+function UserNav({ user }: { user: UserProfile | null }) {
   const router = useRouter();
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-        const profile = await getUserProfileAction();
-        if(profile && !('error' in profile)) {
-            setUser(profile as UserProfile);
-        }
-    }
-    fetchUser();
-  }, [])
   
+  const handleLogout = async () => {
+    // The API route will handle cookie invalidation if any
+    await fetch('/api/auth/logout', { method: 'POST' });
+    
+    // Clear client-side storage
+    localStorage.removeItem('session_token');
+    localStorage.removeItem('user_profile');
+
+    // Force a reload to the login page to clear all state.
+    window.location.href = '/login';
+  };
+
   if (!user) {
     return null; // Or a loading skeleton
   }
@@ -87,7 +112,7 @@ function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarFallback>{user.name?.charAt(0) || 'M'}</AvatarFallback>
+            <AvatarFallback>{user.name?.charAt(0).toUpperCase() || 'M'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -106,7 +131,10 @@ function UserNav() {
           <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Log out</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

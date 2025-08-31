@@ -1,14 +1,17 @@
 
+// src/app/page.tsx
 'use client';
-
-import React from 'react';
-import DashboardView from '@/components/features/dashboard-view';
-
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <DashboardView />
-    </div>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    // The middleware should handle the redirection logic.
+    // This is a fallback to ensure client-side navigation also redirects.
+    router.replace('/dashboard');
+  }, [router]);
+
+  return null; // Or a loading spinner
 }

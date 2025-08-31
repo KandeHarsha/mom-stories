@@ -266,18 +266,18 @@ export default function MemoryBoxView() {
                     Upload a Memory
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-                 <form action={handleSave} ref={formRef}>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <Box className="h-6 w-6 text-primary"/>
-                            Create a New Memory
-                        </DialogTitle>
-                        <DialogDescription>
-                            What precious moment do you want to save? Click save when you're done.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-6">
+            <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Box className="h-6 w-6 text-primary"/>
+                        Create a New Memory
+                    </DialogTitle>
+                    <DialogDescription>
+                        What precious moment do you want to save? Click save when you're done.
+                    </DialogDescription>
+                </DialogHeader>
+                 <form action={handleSave} ref={formRef} className="flex-grow overflow-hidden flex flex-col">
+                    <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-6 py-4">
                         <div className="space-y-2">
                            <Label htmlFor="title">Title</Label>
                            <Input id="title" name="title" placeholder="e.g., First ultrasound, a funny quote..." required/>
@@ -349,7 +349,7 @@ export default function MemoryBoxView() {
                             </div>
                         )}
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="pt-4 flex-shrink-0">
                         <DialogClose asChild>
                             <Button type="button" variant="secondary" onClick={resetForm}>
                                 Cancel
@@ -401,12 +401,12 @@ export default function MemoryBoxView() {
 
       {selectedMemory && (
         <Dialog open={!!selectedMemory} onOpenChange={(isOpen) => { if (!isOpen) setSelectedMemory(null); }}>
-          <DialogContent className="sm:max-w-xl">
+          <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>{selectedMemory.title}</DialogTitle>
               <DialogDescription>{selectedMemory.createdAt as string}</DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-4">
+            <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-4 py-4">
               {selectedMemory.imageUrl && (
                 <div className="relative aspect-video">
                   <Image src={selectedMemory.imageUrl} alt={selectedMemory.title} layout="fill" objectFit="contain" className="rounded-lg" />
@@ -424,7 +424,7 @@ export default function MemoryBoxView() {
                 </div>
               )}
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-4 flex-shrink-0">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={isDeleting}>
