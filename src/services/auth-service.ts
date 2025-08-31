@@ -29,7 +29,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export async function registerUser(data: RegisterInput): Promise<any> {
     try {
         const response = await axios.post(
-            'https://api.loginradius.com/identity/v2/manage/account',
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/manage/account`,
             {
                 Email: [{ Type: "Primary", Value: data.email }],
                 Password: data.password,
@@ -55,7 +55,7 @@ export async function registerUser(data: RegisterInput): Promise<any> {
 export async function loginUser(data: LoginInput): Promise<any> {
     try {
         const response = await axios.post(
-            'https://api.loginradius.com/identity/v2/auth/login',
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/login`,
             {
                 email: data.email,
                 password: data.password
@@ -65,7 +65,6 @@ export async function loginUser(data: LoginInput): Promise<any> {
                     apikey: process.env.LOGINRADIUS_API_KEY,
                     apisecret: process.env.LOGINRADIUS_API_SECRET,
                 },
-
                 headers: { 'Content-Type': 'application/json' }
             }
         );
