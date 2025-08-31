@@ -1,7 +1,7 @@
 // src/app/api/journal/[entryId]/route.ts
 import { NextResponse } from 'next/server';
 import { updateJournalEntry, deleteJournalEntry } from '@/services/journal-service';
-import { validateAccessToken } from '@/services/auth-service';
+import { getUserProfile, validateAccessToken } from '@/services/auth-service';
 
 // Update an entry
 export async function PUT(request: Request, { params }: { params: { entryId: string } }) {
@@ -11,8 +11,8 @@ export async function PUT(request: Request, { params }: { params: { entryId: str
             return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
         }
 
-        const validationResponse = await validateAccessToken(token);
-        if (!validationResponse.Uid) {
+        const userProfileResponse = await getUserProfile(token);
+        if (!userProfileResponse.Uid) {
             return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
         }
         
@@ -24,7 +24,7 @@ export async function PUT(request: Request, { params }: { params: { entryId: str
         const data = await request.json();
 
         // Pass UID to ensure user can only update their own entry. This logic would be inside updateJournalEntry.
-        await updateJournalEntry(entryId, validationResponse.Uid, {
+        await updateJournalEntry(entryId, userProfileResponse.Uid, {
             title: data.title,
             content: data.content,
         });
@@ -47,8 +47,8 @@ export async function DELETE(request: Request, { params }: { params: { entryId: 
             return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
         }
 
-        const validationResponse = await validateAccessToken(token);
-        if (!validationResponse.Uid) {
+        const userProfileResponse = await getUserProfile(token);
+        if (!userProfileResponse.Uid) {
             return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
         }
 
@@ -58,7 +58,7 @@ export async function DELETE(request: Request, { params }: { params: { entryId: 
         }
 
         // Pass UID to ensure user can only delete their own entry.
-        await deleteJournalEntry(entryId, validationResponse.Uid);
+        await deleteJournalEntry(entryId, userProfileResponse.Uid);
 
         return new NextResponse(JSON.stringify({ success: true }), { status: 200 });
     } catch (error) {

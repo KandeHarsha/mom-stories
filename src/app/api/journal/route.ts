@@ -18,9 +18,6 @@ export async function GET(request: Request) {
         // }
 
         const userProfileResponse  = await getUserProfile(token);
-        
-        // console.log("userProfileResponse:", userProfileResponse);
-        console.log("UserId", userProfileResponse.Uid);
         const entries = await getJournalEntries(userProfileResponse.Uid);
         return new NextResponse(JSON.stringify(entries), { status: 200 });
     } catch (error) {
@@ -38,12 +35,9 @@ export async function POST(request: Request) {
             return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
         }
 
-        const validationResponse = await validateAccessToken(token);
-        if (!validationResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
-        }
+        const userProfileResponse  = await getUserProfile(token);
         
-        const userId = validationResponse.Uid;
+        const userId = userProfileResponse.Uid;
 
         const formData = await request.formData();
         const title = formData.get('title') as string;
