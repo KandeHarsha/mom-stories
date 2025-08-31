@@ -1,4 +1,3 @@
-
 // src/components/features/settings-view.tsx
 'use client';
 
@@ -13,6 +12,7 @@ import { getUserProfileAction, updateUserProfileAction } from '@/app/actions';
 import { Loader2, Settings, Mail } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type UserProfile } from '@/services/user-service';
+import { useUser } from '@/context/user-context';
 
 const motherhoodStages = [
     { value: 'preparation', label: 'Preparation / Trying to Conceive' },
@@ -24,48 +24,25 @@ const motherhoodStages = [
 export default function SettingsView() {
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
-    const [isLoading, startLoadingTransition] = useTransition();
+    const { user, isLoading: isUserLoading, setUser } = useUser();
     const [profile, setProfile] = useState<UserProfile | null>(null);
+
     const [editedName, setEditedName] = useState('');
     const [selectedPhase, setSelectedPhase] = useState('');
 
-    useEffect(() => {
-        const uid = localStorage.getItem('uid');
-        if (!uid) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not find user information. Please log in again.'});
-            return;
+     useEffect(() => {
+        if (user) {
+            setProfile(user);
+            setEditedName(user.FirstName || user.name || '');
+            setSelectedPhase(user.phase || '');
         }
-
-        startLoadingTransition(async () => {
-            try {
-                const fetchedProfile = await getUserProfileAction(uid);
-                if (fetchedProfile && !('error' in fetchedProfile)) {
-                    const userProfile = fetchedProfile as UserProfile;
-                    setProfile(userProfile);
-                    setSelectedPhase(userProfile.phase || '');
-                    setEditedName(userProfile.name || '');
-                } else {
-                     toast({
-                        variant: 'destructive',
-                        title: 'Error',
-                        description: (fetchedProfile as any)?.error || 'Failed to load your profile.',
-                    });
-                }
-            } catch (error) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'Failed to load your profile.',
-                });
-            }
-        });
-    }, [toast]);
+    }, [user]);
 
     const handleSave = () => {
-        if (!profile || (editedName === profile.name && selectedPhase === profile.phase)) return;
+        if (!profile || !user || (editedName === (user.FirstName || user.name) && selectedPhase === user.phase)) return;
         
         startTransition(async () => {
-            const result = await updateUserProfileAction({name: editedName, phase: selectedPhase, userId: profile.id });
+            const result = await updateUserProfileAction({name: editedName, phase: selectedPhase, userId: user.Uid });
             if (result.error) {
                 toast({
                     variant: 'destructive',
@@ -73,7 +50,9 @@ export default function SettingsView() {
                     description: result.error,
                 });
             } else if (result.success) {
-                setProfile(prev => prev ? { ...prev, name: editedName, phase: selectedPhase as any } : null);
+                const updatedProfile = { ...user, FirstName: editedName, name: editedName, phase: selectedPhase as any };
+                setUser(updatedProfile);
+                setProfile(updatedProfile);
                 toast({
                     title: 'Profile Updated!',
                     description: 'Your profile details have been updated.',
@@ -82,7 +61,10 @@ export default function SettingsView() {
         });
     };
 
-    const hasChanges = profile ? (editedName.trim() !== profile.name || selectedPhase !== profile.phase) && editedName.trim().length > 0 : false;
+    const hasChanges = profile ? (editedName.trim() !== (profile.FirstName || profile.name) || selectedPhase !== profile.phase) && editedName.trim().length > 0 : false;
+    const isLoading = isUserLoading || !profile;
+    const email = user?.Email?.[0]?.Value || user?.email || 'No email found';
+
 
     return (
         <div>
@@ -118,7 +100,7 @@ export default function SettingsView() {
                                 <Label>Email Address (read-only)</Label>
                                 <p className="text-md flex items-center gap-2 text-muted-foreground p-2 bg-secondary rounded-md h-10">
                                   <Mail className="h-4 w-4"/>
-                                  {profile.email}
+                                  {email}
                                 </p>
                             </div>
                             <div>

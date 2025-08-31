@@ -1,4 +1,3 @@
-
 // src/services/user-service.ts
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -50,18 +49,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             } as UserProfile;
             return profileData;
         } else {
-            console.log(`No profile found for user ${userId}, creating one.`);
-            // This part might need to be adjusted based on where you get the initial name/email
-            // For now, it will create a placeholder.
-            const defaultProfile = { 
-                name: 'New User',
-                email: 'newuser@example.com',
-                phase: '', 
-                updatedAt: serverTimestamp(),
-                createdAt: serverTimestamp(),
-            };
-            await setDoc(docRef, defaultProfile);
-            return { id: userId, ...defaultProfile, updatedAt: new Date().toISOString(), createdAt: new Date().toISOString() } as UserProfile;
+            return null;
         }
     } catch (e) {
         console.error("Error getting user profile: ", e);

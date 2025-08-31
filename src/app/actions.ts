@@ -1,4 +1,3 @@
-
 // src/app/actions.ts
 'use server';
 
@@ -8,7 +7,7 @@ import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
 import { updateJournalEntry } from '@/ai/flows/update-journal-entry';
 import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
 import { uploadFileAndGetURL, getJournalEntries } from '@/services/journal-service';
-import { getUserProfile, updateUserProfile, type UserProfile } from '@/services/user-service';
+import { getUserProfile, updateUserProfile } from '@/services/user-service';
 import { z } from 'zod';
 import { saveMemory } from '@/ai/flows/save-memory';
 import { deleteMemory } from '@/ai/flows/delete-memory';
@@ -174,6 +173,8 @@ export async function updateUserProfileAction(data: {name: string, phase: string
     }
 
     try {
+        // Here we can update both firestore and loginradius if needed
+        // For now just firestore as per existing setup
         await updateUserProfile(validatedData.data.userId, { name: validatedData.data.name, phase: validatedData.data.phase as any });
         return { success: true };
     } catch(e) {
