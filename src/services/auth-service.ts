@@ -94,20 +94,26 @@ export async function validateAccessToken(token: string): Promise<any> {
     }
 }
 
+export async function getUserProfile(accessToken: string): Promise<any> {
+    try {
+        const response = await axios.get(
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
+            {
+                params: {
+                    apikey: process.env.LOGINRADIUS_API_KEY
+                },
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        return response.data; // Returns user profile data
+    } catch (error: any) {
+        throw new Error(error.response?.data?.Description || 'Failed to fetch user profile.');
+    }
+}
 
-// export async function loginUser(data: LoginInput): Promise<UserCredential> {
-//     try {
-//         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-//         return userCredential;
-//     } catch (error: any) {
-//         // Handle specific Firebase errors
-//         if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-//              throw new Error('Invalid email or password.');
-//         }
-//         console.error("Error logging in user:", error);
-//         throw new Error('Login failed. Please try again.');
-//     }
-// }
 
 export async function logoutUser() {
     try {

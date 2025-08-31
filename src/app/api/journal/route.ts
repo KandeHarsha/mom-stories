@@ -1,8 +1,7 @@
 // src/app/api/journal/route.ts
 import { NextResponse } from 'next/server';
 import { getJournalEntries, addJournalEntry, uploadFileAndGetURL } from '@/services/journal-service';
-import { validateAccessToken } from '@/services/auth-service';
-
+import { validateAccessToken, getUserProfile } from '@/services/auth-service';
 // Get all entries
 export async function GET(request: Request) {
     try {
@@ -11,12 +10,18 @@ export async function GET(request: Request) {
             return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
         }
         
-        const validationResponse = await validateAccessToken(token);
-        if (!validationResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
-        }
+        // const validationResponse = await validateAccessToken(token);
+        // console.log("validationResponse:", validationResponse);
+        // Check if the token is expired
+        // if (!validationResponse.expires_in || new Date(validationResponse.expires_in) < new Date()) {
+        //     return new NextResponse(JSON.stringify({ error: 'Token expired' }), { status: 401 });
+        // }
+
+        const userProfileResponse  = await getUserProfile(token);
         
-        const entries = await getJournalEntries(validationResponse.Uid);
+        // console.log("userProfileResponse:", userProfileResponse);
+        console.log("UserId", userProfileResponse.Uid);
+        const entries = await getJournalEntries(userProfileResponse.Uid);
         return new NextResponse(JSON.stringify(entries), { status: 200 });
     } catch (error) {
         console.error('Get Journal Entries Error:', error);

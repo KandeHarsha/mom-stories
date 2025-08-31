@@ -87,10 +87,12 @@ export async function uploadFileAndGetURL(file: File | ArrayBuffer, userId: stri
 
 
 export async function getJournalEntries(userId: string): Promise<JournalEntry[]> {
+    console.log("userId:", userId);
+    debugger;
     try {
         const q = query(
             collection(db, "journalEntries"), 
-            where("userId", "==", userId), 
+            where("userId", "==", userId),
             orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(q);
