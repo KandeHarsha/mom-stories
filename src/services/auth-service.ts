@@ -1,4 +1,3 @@
-
 // src/services/auth-service.ts
 import { auth } from '@/lib/firebase';
 import { 
@@ -71,6 +70,27 @@ export async function loginUser(data: LoginInput): Promise<any> {
         return response.data; // Includes access token and profile info
     } catch (error: any) {
         throw new Error(error.response?.data?.Description || 'Login failed.');
+    }
+}
+
+export async function validateAccessToken(token: string): Promise<any> {
+    try {
+        const response = await axios.get(
+             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/access_token/validate`,
+             {
+                params: {
+                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    apisecret: process.env.LOGINRADIUS_API_SECRET,
+                },
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+             }
+        );
+        return response.data;
+    } catch (error: any) {
+         throw new Error(error.response?.data?.Description || 'Token validation failed.');
     }
 }
 
