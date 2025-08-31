@@ -18,12 +18,17 @@ export interface UserProfile {
 export async function createUserProfile(userId: string, data: { name: string, email: string }) {
      try {
         const docRef = doc(db, 'userProfiles', userId);
-        await setDoc(docRef, {
-            ...data,
-            phase: '', // Default phase
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        });
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            await setDoc(docRef, {
+                name: data.name,
+                email: data.email,
+                phase: '', // Default phase
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+        }
     } catch (e) {
         console.error("Error creating user profile: ", e);
         throw new Error('Could not create user profile.');
@@ -49,6 +54,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             } as UserProfile;
             return profileData;
         } else {
+             // If firestore profile doesn't exist, maybe it should be created?
+             // For now, returning null is safer.
             return null;
         }
     } catch (e) {

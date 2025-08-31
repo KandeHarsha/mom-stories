@@ -28,7 +28,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export async function registerUser(data: RegisterInput): Promise<any> {
     try {
         const response = await axios.post(
-            `https://api.loginradius.com/identity/v2/manage/account`,
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/manage/account`,
             {
                 Email: [{ Type: "Primary", Value: data.email }],
                 Password: data.password,
@@ -44,6 +44,9 @@ export async function registerUser(data: RegisterInput): Promise<any> {
                 headers: { 'Content-Type': 'application/json' }
             }
         );
+        // After successful registration with LoginRadius, create a profile in Firestore
+        await createUserProfile(response.data.Uid, { name: data.name, email: data.email });
+
         return response.data;
     } catch (error: any) {
         throw new Error(error.response?.data?.Description || 'Registration failed.');
@@ -54,7 +57,7 @@ export async function registerUser(data: RegisterInput): Promise<any> {
 export async function loginUser(data: LoginInput): Promise<any> {
     try {
         const response = await axios.post(
-            `https://api.loginradius.com/identity/v2/auth/login`,
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/login`,
             {
                 email: data.email,
                 password: data.password
@@ -75,7 +78,7 @@ export async function loginUser(data: LoginInput): Promise<any> {
 export async function validateAccessToken(token: string): Promise<any> {
     try {
         const response = await axios.get(
-             `https://api.loginradius.com/identity/v2/auth/access_token/validate`,
+             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/access_token/validate`,
              {
                 params: {
                     apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_API_KEY,
@@ -95,7 +98,7 @@ export async function validateAccessToken(token: string): Promise<any> {
 export async function getUserProfile(accessToken: string): Promise<any> {
     try {
         const response = await axios.get(
-            `https://api.loginradius.com/identity/v2/auth/account`,
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
             {
                 params: {
                     apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_API_KEY
@@ -115,7 +118,7 @@ export async function getUserProfile(accessToken: string): Promise<any> {
 export async function updateUserProfile(accessToken: string, profileFields: Record<string, any>): Promise<any> {
     try {
         const response = await axios.put(
-            'https://api.loginradius.com/identity/v2/auth/account',
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
             profileFields,
             {
                 params: {
