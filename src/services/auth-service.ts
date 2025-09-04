@@ -1,19 +1,14 @@
 // src/services/auth-service.ts
 import { auth } from '@/lib/firebase';
-import { 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword,
-    signOut,
-    type UserCredential
-} from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { z } from 'zod';
-import { createUserProfile } from './user-service';
 import axios from 'axios';
 
 export const registerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
     email: z.string().email(),
     password: z.string().min(6, "Password must be at least 6 characters."),
+    phase: z.enum(["preparation", "pregnancy", "fourth_trimester", "beyond"]).optional()
 });
 
 export const loginSchema = z.object({
@@ -33,12 +28,16 @@ export async function registerUser(data: RegisterInput): Promise<any> {
                 Email: [{ Type: "Primary", Value: data.email }],
                 Password: data.password,
                 FirstName: data.name,
+                Company: data.phase || null
+                // CustomFields: {
+                //     Phase: data.phase || '',
+                // }
                 // Add additional profile fields if needed
             },
             {
                 params: {
                     apikey: process.env.LOGINRADIUS_API_KEY,
-                    apisecret: process.env.LOGINRADIUS_API_SECRET, // Only if needed (backend)
+                    apisecret: process.env.LOGINRADIUS_API_SECRET,
                 },
 
                 headers: { 'Content-Type': 'application/json' }

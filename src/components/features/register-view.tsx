@@ -1,4 +1,3 @@
-
 // src/components/features/register-view.tsx
 'use client';
 
@@ -18,11 +17,20 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 export default function RegisterView() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phase, setPhase] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
@@ -34,7 +42,7 @@ export default function RegisterView() {
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, phase }),
         });
 
         const data = await response.json();
@@ -108,10 +116,45 @@ export default function RegisterView() {
                 disabled={isPending}
               />
             </div>
+            {/* <div className="grid gap-2">
+              <Label htmlFor="phase">Phase</Label>
+              <select
+                id="phase"
+                value={phase}
+                onChange={(e) => setPhase(e.target.value)}
+                disabled={isPending}
+                className="border rounded-md px-3 py-2 text-sm"
+              >
+                <option value="">Select a phase (optional)</option>
+                <option value="preparation">Preparation</option>
+                <option value="pregnancy">Pregnancy</option>
+                <option value="fourth_trimester">Fourth Trimester</option>
+                <option value="beyond">Beyond</option>
+              </select>
+            </div> */}
+            <div className="grid gap-2">
+              <Label htmlFor="phase">Phase</Label>
+              <Select
+                onValueChange={setPhase}
+                value={phase}
+                disabled={isPending}
+              >
+                <SelectTrigger id="phase">
+                  <SelectValue placeholder="Select a phase (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="preparation">Preparation</SelectItem>
+                  <SelectItem value="pregnancy">Pregnancy</SelectItem>
+                  <SelectItem value="fourth_trimester">Fourth Trimester</SelectItem>
+                  <SelectItem value="beyond">Beyond</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button className="w-full" type="submit" disabled={isPending}>
-               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign up
             </Button>
             <div className="text-center text-sm">
