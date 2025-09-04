@@ -7,13 +7,14 @@ export interface UserProfile {
     id: string;
     name: string;
     email: string;
-    phase: 'preparation' | 'pregnancy' | 'fourth-trimester' | 'beyond' | '';
+    phase: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
     updatedAt: any;
     createdAt: any;
     // From LoginRadius
     Uid: string;
     FirstName: string;
     Email: { Type: string, Value: string }[];
+    Company: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
 }
 
 export async function createUserProfile(userId: string, data: { name: string, email: string }) {

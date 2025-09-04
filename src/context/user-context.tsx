@@ -26,6 +26,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
+    if(!user?.phase && user?.Company) {
+      setUser(prev => prev ? { ...prev, phase: prev.Company } : prev);
+    }
+  }, [user])
+
+  useEffect(() => {
     const checkUserSession = async () => {
       const token = localStorage.getItem('session_token');
       if (token) {
