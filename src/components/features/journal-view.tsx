@@ -463,20 +463,20 @@ export default function JournalView() {
         {selectedEntry && (
              <Dialog open={!!selectedEntry} onOpenChange={(isOpen) => { if (!isOpen) setSelectedEntry(null); }}>
                 <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-                    <DialogHeader>
-                        {isEditMode ? (
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-title" className="sr-only">Title</Label>
-                                <Input id="edit-title" name="title" defaultValue={selectedEntry.title} required className="text-lg font-semibold" />
-                            </div>
-                        ) : (
-                            <>
-                                <DialogTitle>{selectedEntry.title}</DialogTitle>
-                                <DialogDescription>{selectedEntry.createdAt}</DialogDescription>
-                            </>
-                        )}
-                    </DialogHeader>
                     <form onSubmit={(e) => handleUpdate(e)} className="flex-grow overflow-hidden flex flex-col">
+                         <DialogHeader>
+                            {isEditMode ? (
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-title" className="sr-only">Title</Label>
+                                    <Input id="edit-title" name="title" defaultValue={selectedEntry.title} required className="text-lg font-semibold" />
+                                </div>
+                            ) : (
+                                <>
+                                    <DialogTitle>{selectedEntry.title}</DialogTitle>
+                                    <DialogDescription>{selectedEntry.createdAt}</DialogDescription>
+                                </>
+                            )}
+                        </DialogHeader>
                         <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-4 my-4">
                             {isEditMode ? (
                                 <div className="space-y-2">
