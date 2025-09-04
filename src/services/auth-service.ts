@@ -20,27 +20,58 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
 
+// export async function registerUser(data: RegisterInput): Promise<any> {
+//     try {
+//         const response = await axios.post(
+//             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/manage/account`,
+//             {
+//                 Email: [{ Type: "Primary", Value: data.email }],
+//                 Password: data.password,
+//                 FirstName: data.name,
+//                 Company: data.phase || null
+                // CustomFields: {
+                //     Phase: data.phase || '',
+                // }
+//                 // Add additional profile fields if needed
+//             },
+//             {
+//                 params: {
+//                     apikey: process.env.LOGINRADIUS_API_KEY,
+//                     apisecret: process.env.LOGINRADIUS_API_SECRET,
+//                 },
+
+//                 headers: { 'Content-Type': 'application/json' }
+//             }
+//         );
+//         return response.data;
+//     } catch (error: any) {
+//         throw new Error(error.response?.data?.Description || 'Registration failed.');
+//     }
+// }
+
 export async function registerUser(data: RegisterInput): Promise<any> {
     try {
         const response = await axios.post(
-            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/manage/account`,
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/register`,
             {
                 Email: [{ Type: "Primary", Value: data.email }],
                 Password: data.password,
                 FirstName: data.name,
-                Company: data.phase || null
+                Company: data.phase || null,
                 // CustomFields: {
                 //     Phase: data.phase || '',
                 // }
-                // Add additional profile fields if needed
+                // Add additional fields if needed
             },
             {
                 params: {
                     apikey: process.env.LOGINRADIUS_API_KEY,
-                    apisecret: process.env.LOGINRADIUS_API_SECRET,
+                    verificationurl: `${process.env.BASE_URL}/api/auth/verify`
                 },
-
-                headers: { 'Content-Type': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-LoginRadius-Sott': process.env.LOGINRADIUS_SOTT // SOTT required for registration
+                }
             }
         );
         return response.data;
