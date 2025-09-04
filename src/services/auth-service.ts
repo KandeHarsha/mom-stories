@@ -135,6 +135,25 @@ export async function updateUserProfile(accessToken: string, profileFields: Reco
     }
 }
 
+export async function verifyEmail(vtoken: string): Promise<any> {
+    try {
+        const response = await axios.get(
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/email`,
+            {
+                params: {
+                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    verificationtoken: vtoken,
+                    verificationtype: 'emailverification'
+                }
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.response?.data?.Description || "Email verification failed.");
+    }
+}
+
+
 
 export async function logoutUser() {
     try {
