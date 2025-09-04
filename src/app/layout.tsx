@@ -3,6 +3,7 @@
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from '@/context/user-context';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function RootLayout({
   children,
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <UserProvider>
           {children}
+          <SpeedInsights />
         </UserProvider>
         <Toaster />
       </body>
