@@ -1,4 +1,3 @@
-
 // src/app/actions.ts
 'use server';
 
@@ -8,7 +7,8 @@ import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
 import { updateJournalEntry } from '@/ai/flows/update-journal-entry';
 import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
 import { uploadFileAndGetURL, getJournalEntries } from '@/services/journal-service';
-import { getUserProfile, updateUserProfile, type UserProfile } from '@/services/user-service';
+import { getUserProfile, updateUserProfile as updateUserDbProfile } from '@/services/user-service';
+import { updateUserProfile as updateAuthProfile } from '@/services/auth-service';
 import { z } from 'zod';
 import { saveMemory } from '@/ai/flows/save-memory';
 import { deleteMemory } from '@/ai/flows/delete-memory';
@@ -172,9 +172,14 @@ export async function updateUserProfileAction(data: {name: string, phase: string
      if (!validatedData.success) {
         return { error: validatedData.error.errors.map(e => e.message).join(', ') };
     }
+    const { userId, name, phase } = validatedData.data;
 
     try {
-        await updateUserProfile(validatedData.data.userId, { name: validatedData.data.name, phase: validatedData.data.phase as any });
+        // Here we'd need the access token to update the LoginRadius profile.
+        // This is a simplification. In a real app, you would get the token from the user's session.
+        // For now, we will focus on updating Firestore.
+        await updateUserDbProfile(userId, { name, phase: phase as any });
+
         return { success: true };
     } catch(e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';

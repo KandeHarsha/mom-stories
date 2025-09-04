@@ -1,18 +1,12 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import AppLayout from '@/components/app-layout';
+import type { UserProfile } from '@/services/user-service';
 
-// Define the shape of the user profile from LoginRadius
-interface UserProfile {
-    Uid: string;
-    FirstName: string;
-    Email: { Type: string, Value: string }[];
-    [key: string]: any; // Allow other properties
-}
 
 interface UserContextType {
   user: UserProfile | null;
@@ -20,7 +14,7 @@ interface UserContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
-  setUser: (user: UserProfile | null) => void;
+  updateUser: (user: UserProfile | null) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -60,6 +54,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     checkUserSession();
   }, []);
   
+  const updateUser = useCallback((newUserState: UserProfile | null) => {
+    setUser(newUserState);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -122,7 +119,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }
   
   return (
-    <UserContext.Provider value={{ user, isLoggedIn, isLoading, login, logout, setUser }}>
+    <UserContext.Provider value={{ user, isLoggedIn, isLoading, login, logout, updateUser }}>
        {isLoggedIn ? <AppLayout>{children}</AppLayout> : children}
     </UserContext.Provider>
   );
