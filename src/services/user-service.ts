@@ -17,6 +17,22 @@ export interface UserProfile {
     Company: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
 }
 
+// src/services/profile-service.ts
+export async function updateProfileApi(data: { name: string; phase: string; userId: string }) {
+  try {
+    const token = localStorage.getItem('session_token');
+    const response = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    return await response.json();
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+}
+
+
 export async function createUserProfile(userId: string, data: { name: string, email: string }) {
      try {
         const docRef = doc(db, 'userProfiles', userId);

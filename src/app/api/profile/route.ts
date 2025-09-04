@@ -2,6 +2,7 @@
 // src/app/api/profile/route.ts
 import { NextResponse } from 'next/server';
 import { getUserProfile, validateAccessToken } from '@/services/auth-service';
+import { updateUserProfile } from '@/services/auth-service';
 
 export async function GET(request: Request) {
   try {
@@ -30,3 +31,21 @@ export async function GET(request: Request) {
     });
   }
 }
+
+
+export async function PUT(request: Request) {
+    const token = request.headers.get('Authorization')?.split(' ')[1];
+    if (!token) {
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized: No token provided' }), { status: 401 });
+    }
+
+    const profileData = await request.json();
+
+    try {
+        const result = await updateUserProfile(token, profileData);
+        return NextResponse.json({ success: true, data: result }, { status: 200 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+}
+

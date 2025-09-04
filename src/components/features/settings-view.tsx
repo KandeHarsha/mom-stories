@@ -12,12 +12,13 @@ import { updateUserProfileAction } from '@/app/actions';
 import { Loader2, Settings, Mail } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/context/user-context';
-import { type UserProfile } from '@/services/user-service';
+import { updateProfileApi } from '@/services/user-service';
+
 
 const motherhoodStages = [
   { value: 'preparation', label: 'Preparation / Trying to Conceive' },
   { value: 'pregnancy', label: 'Pregnancy' },
-  { value: 'fourth-trimester', label: 'Fourth Trimester (0-3 months)' },
+  { value: 'fourth_trimester', label: 'Fourth Trimester (0-3 months)' },
   { value: 'beyond', label: 'Beyond (Parenting)' },
 ];
 
@@ -37,27 +38,27 @@ export default function SettingsView() {
   }, [user]);
 
   const handleSave = () => {
-    if (!user || (editedName === (user.FirstName || user.name) && selectedPhase === user.phase)) return;
+  if (!user || (editedName === (user.FirstName || user.name) && selectedPhase === user.phase)) return;
 
-    startSavingTransition(async () => {
-      const result = await updateUserProfileAction({ name: editedName, phase: selectedPhase, userId: user.Uid });
-      if (result.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Oh no! Something went wrong.',
-          description: result.error,
-        });
-      } else if (result.success) {
-        // Update user in context
-        const updatedUser = { ...user, FirstName: editedName, name: editedName, phase: selectedPhase };
-        updateUser(updatedUser);
-        toast({
-          title: 'Profile Updated!',
-          description: 'Your profile details have been updated.',
-        });
-      }
-    });
-  };
+  startSavingTransition(async () => {
+    const result = await updateProfileApi({ name: editedName, phase: selectedPhase, userId: user.Uid });
+    if (result.error) {
+      toast({
+        variant: 'destructive',
+        title: 'Oh no! Something went wrong.',
+        description: result.error,
+      });
+    } else if (result.success) {
+      // Update user in context
+      const updatedUser = { ...user, name: editedName, phase: selectedPhase };
+      updateUser(updatedUser);
+      toast({
+        title: 'Profile Updated!',
+        description: 'Your profile details have been updated.',
+      });
+    }
+  });
+};
 
   const hasChanges = user ? (editedName.trim() !== (user.FirstName || user.name) || selectedPhase !== user.phase) && editedName.trim().length > 0 : false;
   const email = user?.Email?.[0]?.Value || user?.email || 'No email found';

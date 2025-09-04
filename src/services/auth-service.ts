@@ -148,7 +148,7 @@ export async function updateUserProfile(accessToken: string, profileFields: Reco
     try {
         const response = await axios.put(
             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
-            profileFields,
+            {FirstName: profileFields.name, Company: profileFields.phase},
             {
                 params: {
                     apikey: process.env.LOGINRADIUS_API_KEY
