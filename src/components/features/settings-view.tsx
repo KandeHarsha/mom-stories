@@ -1,4 +1,3 @@
-
 // src/components/features/settings-view.tsx
 'use client';
 
@@ -9,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { getUserProfileAction, updateUserProfileAction } from '@/app/actions';
+import { updateUserProfileAction } from '@/app/actions';
 import { Loader2, Settings, Mail } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUser } from '@/context/user-context';
 import { type UserProfile } from '@/services/user-service';
 
 const motherhoodStages = [
@@ -23,49 +23,24 @@ const motherhoodStages = [
 
 export default function SettingsView() {
     const { toast } = useToast();
-    const [isPending, startTransition] = useTransition();
-    const [isLoading, startLoadingTransition] = useTransition();
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const { user, isLoading, updateUser } = useUser();
+    const [isSaving, startSavingTransition] = useTransition();
+
     const [editedName, setEditedName] = useState('');
     const [selectedPhase, setSelectedPhase] = useState('');
 
     useEffect(() => {
-        const uid = localStorage.getItem('uid');
-        if (!uid) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not find user information. Please log in again.'});
-            return;
+        if (user) {
+            setEditedName(user.FirstName || user.name || '');
+            setSelectedPhase(user.phase || '');
         }
-
-        startLoadingTransition(async () => {
-            try {
-                const fetchedProfile = await getUserProfileAction(uid);
-                if (fetchedProfile && !('error' in fetchedProfile)) {
-                    const userProfile = fetchedProfile as UserProfile;
-                    setProfile(userProfile);
-                    setSelectedPhase(userProfile.phase || '');
-                    setEditedName(userProfile.name || '');
-                } else {
-                     toast({
-                        variant: 'destructive',
-                        title: 'Error',
-                        description: (fetchedProfile as any)?.error || 'Failed to load your profile.',
-                    });
-                }
-            } catch (error) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'Failed to load your profile.',
-                });
-            }
-        });
-    }, [toast]);
+    }, [user]);
 
     const handleSave = () => {
-        if (!profile || (editedName === profile.name && selectedPhase === profile.phase)) return;
+        if (!user || (editedName === (user.FirstName || user.name) && selectedPhase === user.phase)) return;
         
-        startTransition(async () => {
-            const result = await updateUserProfileAction({name: editedName, phase: selectedPhase, userId: profile.id });
+        startSavingTransition(async () => {
+            const result = await updateUserProfileAction({name: editedName, phase: selectedPhase, userId: user.Uid });
             if (result.error) {
                 toast({
                     variant: 'destructive',
@@ -73,7 +48,9 @@ export default function SettingsView() {
                     description: result.error,
                 });
             } else if (result.success) {
-                setProfile(prev => prev ? { ...prev, name: editedName, phase: selectedPhase as any } : null);
+                // Update user in context
+                const updatedUser = { ...user, FirstName: editedName, name: editedName, phase: selectedPhase };
+                updateUser(updatedUser);
                 toast({
                     title: 'Profile Updated!',
                     description: 'Your profile details have been updated.',
@@ -82,7 +59,8 @@ export default function SettingsView() {
         });
     };
 
-    const hasChanges = profile ? (editedName.trim() !== profile.name || selectedPhase !== profile.phase) && editedName.trim().length > 0 : false;
+    const hasChanges = user ? (editedName.trim() !== (user.FirstName || user.name) || selectedPhase !== user.phase) && editedName.trim().length > 0 : false;
+    const email = user?.Email?.[0]?.Value || user?.email || 'No email found';
 
     return (
         <div>
@@ -108,7 +86,7 @@ export default function SettingsView() {
                             <Skeleton className="h-8 w-1/3" />
                             <Skeleton className="h-10 w-full" />
                         </div>
-                    ) : profile ? (
+                    ) : user ? (
                         <div className="space-y-4 pt-6">
                             <div>
                                 <Label htmlFor="name">Your Name</Label>
@@ -118,7 +96,7 @@ export default function SettingsView() {
                                 <Label>Email Address (read-only)</Label>
                                 <p className="text-md flex items-center gap-2 text-muted-foreground p-2 bg-secondary rounded-md h-10">
                                   <Mail className="h-4 w-4"/>
-                                  {profile.email}
+                                  {email}
                                 </p>
                             </div>
                             <div>
@@ -136,8 +114,8 @@ export default function SettingsView() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                             <Button onClick={handleSave} disabled={isPending || !hasChanges}>
-                                {isPending ? (
+                             <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+                                {isSaving ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     Saving...
@@ -148,7 +126,7 @@ export default function SettingsView() {
                             </Button>
                         </div>
                     ) : (
-                        <p>Could not load profile.</p>
+                        <p>Could not load profile. Please try logging in again.</p>
                     )}
                 </CardContent>
             </Card>
