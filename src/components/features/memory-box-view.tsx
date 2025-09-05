@@ -1,4 +1,4 @@
-
+// src/components/features/memory-box-view.tsx
 'use client';
 import React, { useState, useTransition, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -38,13 +38,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Box, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle, Trash2, BookText, Music } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { saveMemoryAction, deleteMemoryAction, getMemoriesAction } from '@/app/actions';
 import { type Memory } from '@/services/memory-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const mimeTypeToFileExtension: { [key: string]: string } = {
   'audio/webm': 'webm',
   'audio/mp4': 'mp4',
+  'audio/m4a': 'm4a',
   'audio/ogg': 'ogg',
   'audio/wav': 'wav',
   'audio/aac': 'aac',
@@ -63,7 +63,6 @@ export default function MemoryBoxView() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isNewMemoryOpen, setIsNewMemoryOpen] = useState(false);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   // Image state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -78,10 +77,23 @@ export default function MemoryBoxView() {
   const audioChunksRef = useRef<Blob[]>([]);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
 
-  const fetchMemories = (uid: string) => {
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('session_token');
+    return {
+      'Authorization': `Bearer ${token}`,
+    };
+  };
+
+  const fetchMemories = () => {
     startLoadingTransition(async () => {
       try {
-        const fetchedMemories = await getMemoriesAction(uid);
+        const response = await fetch('/api/memories', {
+          headers: getAuthHeaders(),
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch memories');
+        }
+        const fetchedMemories = await response.json();
         setMemories(fetchedMemories);
       } catch (error) {
         toast({
@@ -94,11 +106,7 @@ export default function MemoryBoxView() {
   };
 
   useEffect(() => {
-    const uid = localStorage.getItem('uid');
-    setUserId(uid);
-    if (uid) {
-        fetchMemories(uid);
-    }
+    fetchMemories();
   }, []);
 
   useEffect(() => {
@@ -131,12 +139,19 @@ export default function MemoryBoxView() {
       }
   }
 
-  const handleStartRecording = async () => {
+ const handleStartRecording = async () => {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
         setMicPermission(true);
-        mediaRecorderRef.current = new MediaRecorder(stream);
+
+        const options = { mimeType: 'audio/webm' };
+        let supportedMimeType = 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            supportedMimeType = 'audio/mp4';
+        }
+
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: supportedMimeType });
         audioChunksRef.current = [];
 
         mediaRecorderRef.current.ondataavailable = (event) => {
@@ -144,11 +159,16 @@ export default function MemoryBoxView() {
         };
 
         mediaRecorderRef.current.onstop = () => {
-            const blobMimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
-            const blob = new Blob(audioChunksRef.current, { type: blobMimeType });
+            const blob = new Blob(audioChunksRef.current, { type: supportedMimeType });
             setAudioBlob(blob);
             const url = URL.createObjectURL(blob);
             setAudioUrl(url);
+            
+            // Stop the tracks to release the microphone
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            }
         };
 
         mediaRecorderRef.current.start();
@@ -168,10 +188,6 @@ export default function MemoryBoxView() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
     }
   };
 
@@ -191,55 +207,71 @@ export default function MemoryBoxView() {
     setMicPermission(null);
   };
 
-  const handleSave = (formData: FormData) => {
-    if (!userId) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to save a memory.'});
-        return;
+  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    if(selectedFile){
+      formData.append('image', selectedFile);
     }
-    formData.append('userId', userId);
     if(audioBlob){
       const fileExtension = mimeTypeToFileExtension[audioBlob.type] || 'webm';
       formData.append('voiceNote', audioBlob, `voice-note.${fileExtension}`);
     }
-    if (selectedFile) {
-      formData.append('image', selectedFile);
-    }
+    
     startSaveTransition(async () => {
-      const result = await saveMemoryAction(formData);
-      if (result.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Oh no! Something went wrong.',
-          description: result.error,
+      try {
+        const response = await fetch('/api/memories', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: formData,
         });
-      } else if (result.success) {
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.details || 'Failed to save memory');
+        }
         toast({
           title: 'Memory Saved!',
           description: 'Your memory has been saved successfully.',
         });
         resetForm();
-        if (userId) fetchMemories(userId);
-        setIsNewMemoryOpen(false); // Close the dialog
+        fetchMemories();
+        setIsNewMemoryOpen(false);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+          variant: 'destructive',
+          title: 'Oh no! Something went wrong.',
+          description: errorMessage,
+        });
       }
     });
   };
 
   const handleDelete = (memoryId: string) => {
     startDeleteTransition(async () => {
-        const result = await deleteMemoryAction(memoryId);
-        if (result.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Oh no! Something went wrong.',
-                description: result.error,
+        try {
+            const response = await fetch(`/api/memories/${memoryId}`, {
+                method: 'DELETE',
+                 headers: getAuthHeaders(),
             });
-        } else {
+             if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete memory');
+            }
             toast({
                 title: 'Memory Deleted',
                 description: 'Your memory has been deleted.',
             });
-            if (userId) fetchMemories(userId);
+            fetchMemories();
             setSelectedMemory(null);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({
+                variant: 'destructive',
+                title: 'Oh no! Something went wrong.',
+                description: errorMessage,
+            });
         }
     });
   }
@@ -304,7 +336,7 @@ export default function MemoryBoxView() {
                         What precious moment do you want to save? Click save when you're done.
                     </DialogDescription>
                 </DialogHeader>
-                 <form action={handleSave} ref={formRef} className="flex-grow overflow-hidden flex flex-col">
+                 <form onSubmit={handleSave} ref={formRef} className="flex-grow overflow-hidden flex flex-col">
                     <div className="flex-grow overflow-y-auto pr-4 -mr-4 space-y-6 py-4">
                         <div className="space-y-2">
                            <Label htmlFor="title">Title</Label>
