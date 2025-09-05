@@ -42,6 +42,16 @@ import { saveMemoryAction, deleteMemoryAction, getMemoriesAction } from '@/app/a
 import { type Memory } from '@/services/memory-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+const mimeTypeToFileExtension: { [key: string]: string } = {
+  'audio/webm': 'webm',
+  'audio/mp4': 'mp4',
+  'audio/ogg': 'ogg',
+  'audio/wav': 'wav',
+  'audio/aac': 'aac',
+  'audio/mpeg': 'mp3',
+};
+
+
 export default function MemoryBoxView() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -132,7 +142,8 @@ export default function MemoryBoxView() {
         };
 
         mediaRecorderRef.current.onstop = () => {
-            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const blobMimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+            const blob = new Blob(audioChunksRef.current, { type: blobMimeType });
             setAudioBlob(blob);
             const url = URL.createObjectURL(blob);
             setAudioUrl(url);
@@ -181,7 +192,8 @@ export default function MemoryBoxView() {
     }
     formData.append('userId', userId);
     if(audioBlob){
-      formData.append('voiceNote', audioBlob, 'voice-note.webm');
+      const fileExtension = mimeTypeToFileExtension[audioBlob.type] || 'webm';
+      formData.append('voiceNote', audioBlob, `voice-note.${fileExtension}`);
     }
     if (selectedFile) {
       formData.append('image', selectedFile);

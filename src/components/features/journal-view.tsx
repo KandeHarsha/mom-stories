@@ -43,6 +43,16 @@ import { useToast } from '@/hooks/use-toast';
 import { type JournalEntry } from '@/services/journal-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+const mimeTypeToFileExtension: { [key: string]: string } = {
+  'audio/webm': 'webm',
+  'audio/mp4': 'mp4',
+  'audio/ogg': 'ogg',
+  'audio/wav': 'wav',
+  'audio/aac': 'aac',
+  'audio/mpeg': 'mp3',
+};
+
+
 export default function JournalView() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -143,7 +153,8 @@ export default function JournalView() {
         };
 
         mediaRecorderRef.current.onstop = () => {
-            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const blobMimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+            const blob = new Blob(audioChunksRef.current, { type: blobMimeType });
             setAudioBlob(blob);
             const url = URL.createObjectURL(blob);
             setAudioUrl(url);
@@ -193,7 +204,8 @@ export default function JournalView() {
       formData.append('picture', selectedFile);
     }
     if(audioBlob){
-      formData.append('voiceNote', audioBlob, 'voice-note.webm');
+      const fileExtension = mimeTypeToFileExtension[audioBlob.type] || 'webm';
+      formData.append('voiceNote', audioBlob, `voice-note.${fileExtension}`);
     }
     
     startSaveTransition(async () => {
@@ -463,10 +475,10 @@ export default function JournalView() {
         {selectedEntry && (
              <Dialog open={!!selectedEntry} onOpenChange={(isOpen) => { if (!isOpen) setSelectedEntry(null); }}>
                 <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-                    <form onSubmit={(e) => handleUpdate(e)} className="flex-grow overflow-hidden flex flex-col">
-                         <DialogHeader>
+                     <form onSubmit={(e) => handleUpdate(e)} className="flex-grow overflow-hidden flex flex-col">
+                        <DialogHeader>
                             {isEditMode ? (
-                                <div className="space-y-2">
+                                 <div className="space-y-2">
                                     <Label htmlFor="edit-title" className="sr-only">Title</Label>
                                     <Input id="edit-title" name="title" defaultValue={selectedEntry.title} required className="text-lg font-semibold" />
                                 </div>
