@@ -76,6 +76,7 @@ export default function JournalView() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
 
@@ -144,6 +145,7 @@ export default function JournalView() {
   const handleStartRecording = async () => {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
         setMicPermission(true);
         mediaRecorderRef.current = new MediaRecorder(stream);
         audioChunksRef.current = [];
@@ -177,6 +179,10 @@ export default function JournalView() {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
     }
   };
 
