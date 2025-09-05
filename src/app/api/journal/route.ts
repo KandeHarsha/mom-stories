@@ -66,8 +66,7 @@ export async function POST(request: Request) {
         }
 
         if (voiceNoteFile && voiceNoteFile.size > 0) {
-            const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, userId, 'journal-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteFile, userId, 'journal-voice-notes');
         }
         
         const newEntryId = await addJournalEntry(dataToSave);

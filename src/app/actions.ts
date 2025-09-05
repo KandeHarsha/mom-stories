@@ -7,7 +7,7 @@ import { saveJournalEntry } from '@/ai/flows/save-journal-entry';
 import { updateJournalEntry } from '@/ai/flows/update-journal-entry';
 import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
 import { uploadFileAndGetURL, getJournalEntries } from '@/services/journal-service';
-import { getUserProfile, updateUserProfile as updateUserDbProfile } from '@/services/user-service';
+import { getUserProfile as getDbProfile, updateUserProfile as updateUserDbProfile } from '@/services/user-service';
 import { updateUserProfile as updateAuthProfile } from '@/services/auth-service';
 import { z } from 'zod';
 import { saveMemory } from '@/ai/flows/save-memory';
@@ -94,8 +94,7 @@ export async function saveJournalEntryAction(formData: FormData) {
     const voiceNoteFile = formData.get('voiceNote') as File | null;
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
-            const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, userId, 'journal-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteFile, userId, 'journal-voice-notes');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             console.error("Voice note upload error in action:", errorMessage);
@@ -152,7 +151,7 @@ export async function getUserProfileAction(userId: string) {
         return { error: 'User ID must be provided.' };
     }
     try {
-        const profile = await getUserProfile(userId);
+        const profile = await getDbProfile(userId);
         return profile;
     } catch(e) {
         const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
@@ -165,20 +164,19 @@ const profileUpdateSchema = z.object({
     name: z.string().min(1, 'Name cannot be empty.'),
     phase: z.string().min(1, 'Phase cannot be empty'),
     userId: z.string().min(1, 'User ID is required.'),
+    token: z.string().min(1, 'Token is required.'),
 });
 
-export async function updateUserProfileAction(data: {name: string, phase: string, userId: string}) {
+export async function updateUserProfileAction(data: {name: string, phase: string, userId: string, token: string}) {
     const validatedData = profileUpdateSchema.safeParse(data);
      if (!validatedData.success) {
         return { error: validatedData.error.errors.map(e => e.message).join(', ') };
     }
-    const { userId, name, phase } = validatedData.data;
+    const { userId, name, phase, token } = validatedData.data;
 
     try {
-        // Here we'd need the access token to update the LoginRadius profile.
-        // This is a simplification. In a real app, you would get the token from the user's session.
-        // For now, we will focus on updating Firestore.
         await updateUserDbProfile(userId, { name, phase: phase as any });
+        await updateAuthProfile(token, {name, phase});
 
         return { success: true };
     } catch(e) {
@@ -220,8 +218,7 @@ export async function saveMemoryAction(formData: FormData) {
     const voiceNoteFile = formData.get('voiceNote') as File | null;
     if (voiceNoteFile && voiceNoteFile.size > 0) {
         try {
-            const voiceNoteBuffer = await voiceNoteFile.arrayBuffer();
-            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteBuffer, userId, 'memories-voice-notes');
+            dataToSave.voiceNoteUrl = await uploadFileAndGetURL(voiceNoteFile, userId, 'memories-voice-notes');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
             return { error: `Failed to upload voice note: ${errorMessage}` };

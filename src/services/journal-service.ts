@@ -1,7 +1,7 @@
 // src/services/journal-service.ts
 import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc, updateDoc, where, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 
 export interface JournalEntry {
     id: string;
@@ -71,13 +71,16 @@ export async function uploadFileAndGetURL(file: File | ArrayBuffer, userId: stri
         throw new Error("No file data provided.");
     }
     // IMPORTANT: Ensure your Firebase Storage bucket is correctly configured in firebase.ts and exists in your Firebase project.
-    const fileName = file instanceof File ? file.name : 'voice-note.webm';
+    const fileName = file instanceof File ? file.name : `voice-note.${(file as any).type?.split('/')[1] || 'webm'}`;
     const storageRef = ref(storage, `${folder}/${userId}/${Date.now()}-${fileName}`);
     try {
+        const metadata = {
+            contentType: file instanceof File ? file.type : (file as any).type,
+        };
         // If file is ArrayBuffer, wrap in Uint8Array for uploadBytes
         const uploadData = file instanceof ArrayBuffer ? new Uint8Array(file) : file;
-        const snapshot = await uploadBytes(storageRef, uploadData);
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const uploadTask = await uploadBytesResumable(storageRef, uploadData, metadata);
+        const downloadURL = await getDownloadURL(uploadTask.ref);
         return downloadURL;
     } catch (e) {
         console.error("Error uploading file: ", e);
