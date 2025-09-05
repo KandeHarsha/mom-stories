@@ -66,19 +66,30 @@ export async function deleteJournalEntry(entryId: string, userId: string): Promi
     }
 }
 
+function getFileExtension(mimeType: string): string {
+    const parts = mimeType.split('/');
+    return parts[parts.length - 1];
+}
+
 export async function uploadFileAndGetURL(file: File | ArrayBuffer, userId: string, folder: string): Promise<string> {
     if (!file) {
         throw new Error("No file data provided.");
     }
-    // IMPORTANT: Ensure your Firebase Storage bucket is correctly configured in firebase.ts and exists in your Firebase project.
-    const fileName = file instanceof File ? file.name : `voice-note.${(file as any).type?.split('/')[1] || 'webm'}`;
-    const storageRef = ref(storage, `${folder}/${userId}/${Date.now()}-${fileName}`);
+
+    const contentType = file instanceof File ? file.type : (file as any).type;
+    if (!contentType) {
+        throw new Error("Could not determine file type.");
+    }
+    
+    // Generate a unique filename to avoid issues with iPhone uploads providing generic names
+    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${getFileExtension(contentType)}`;
+
+    const storageRef = ref(storage, `${folder}/${userId}/${uniqueFileName}`);
+    
     try {
-        const metadata = {
-            contentType: file instanceof File ? file.type : (file as any).type,
-        };
-        // If file is ArrayBuffer, wrap in Uint8Array for uploadBytes
-        const uploadData = file instanceof ArrayBuffer ? new Uint8Array(file) : file;
+        const metadata = { contentType };
+        const uploadData = file instanceof File ? file : new Uint8Array(file);
+
         const uploadTask = await uploadBytesResumable(storageRef, uploadData, metadata);
         const downloadURL = await getDownloadURL(uploadTask.ref);
         return downloadURL;
@@ -90,8 +101,6 @@ export async function uploadFileAndGetURL(file: File | ArrayBuffer, userId: stri
 
 
 export async function getJournalEntries(userId: string): Promise<JournalEntry[]> {
-    console.log("userId:", userId);
-    debugger;
     try {
         const q = query(
             collection(db, "journalEntries"), 
