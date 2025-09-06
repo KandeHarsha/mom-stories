@@ -29,7 +29,7 @@ const useTheme = () => {
 const motherhoodStages = {
     'preparation': 'Preparation',
     'pregnancy': 'Pregnancy',
-    'fourth-trimester': 'Fourth Trimester',
+    'fourth_trimester': 'Fourth Trimester',
     'beyond': 'Beyond',
     '': 'Not specified'
 };

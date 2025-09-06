@@ -14,7 +14,7 @@ import { useUser } from '@/context/user-context';
 const motherhoodStages = {
     'preparation': 'Preparation / Trying to Conceive',
     'pregnancy': 'Pregnancy',
-    'fourth-trimester': 'Fourth Trimester (0-3 months)',
+    'fourth_trimester': 'Fourth Trimester (0-3 months)',
     'beyond': 'Beyond (Parenting)',
     '': 'Not specified'
 };
