@@ -25,11 +25,26 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if(!user?.phase && user?.Company) {
-      setUser(prev => prev ? { ...prev, phase: prev.Company } : prev);
+  const syncUserObject = (userObj: UserProfile | null): UserProfile | null => {
+    if (!userObj) return null;
+    const synced = { ...userObj };
+
+    // Sync phase/Company
+    if (synced.Company) {
+      synced.phase = synced.Company;
+    } else if(synced.phase) {
+      synced.Company = synced.phase;
     }
-  }, [user])
+    
+    // Sync name/FirstName
+    if (synced.FirstName) {
+      synced.name = synced.FirstName;
+    } else if (synced.name) {
+      synced.FirstName = synced.name;
+    }
+
+    return synced;
+  }
 
   useEffect(() => {
     const checkUserSession = async () => {
@@ -42,8 +57,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             }
           });
           if (res.ok) {
-            const profile = await res.json();
-            setUser(profile);
+            const profile: UserProfile = await res.json();
+            setUser(syncUserObject(profile));
           } else {
             // Token is invalid or expired, clear it
             localStorage.removeItem('session_token');
@@ -61,7 +76,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   
   const updateUser = useCallback((newUserState: UserProfile | null) => {
-    setUser(newUserState);
+    setUser(syncUserObject(newUserState));
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -77,7 +92,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
       localStorage.setItem('session_token', data.token);
       localStorage.setItem('uid', data.profile.Uid);
-      setUser(data.profile);
+      setUser(syncUserObject(data.profile));
       return {};
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

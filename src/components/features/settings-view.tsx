@@ -33,12 +33,12 @@ export default function SettingsView() {
   useEffect(() => {
     if (user) {
       setEditedName(user.FirstName || user.name || '');
-      setSelectedPhase(user.phase || '');
+      setSelectedPhase(user.phase || user.Company || '');
     }
   }, [user]);
 
   const handleSave = () => {
-  if (!user || (editedName === (user.FirstName || user.name) && selectedPhase === user.phase)) return;
+  if (!user || (editedName === (user.FirstName || user.name) && selectedPhase === (user.phase || user.Company))) return;
 
   startSavingTransition(async () => {
     const result = await updateProfileApi({ name: editedName, phase: selectedPhase, userId: user.Uid });
@@ -49,9 +49,17 @@ export default function SettingsView() {
         description: result.error,
       });
     } else if (result.success) {
-      // Update user in context
-      const updatedUser = { ...user, name: editedName, phase: selectedPhase };
-      updateUser(updatedUser);
+      // Update user in context, ensuring all name properties are synced
+      if (user) {
+        const updatedUser = { 
+          ...user, 
+          name: editedName, 
+          FirstName: editedName, 
+          phase: selectedPhase, 
+          Company: selectedPhase as any
+        };
+        updateUser(updatedUser);
+      }
       toast({
         title: 'Profile Updated!',
         description: 'Your profile details have been updated.',
@@ -60,7 +68,7 @@ export default function SettingsView() {
   });
 };
 
-  const hasChanges = user ? (editedName.trim() !== (user.FirstName || user.name) || selectedPhase !== user.phase) && editedName.trim().length > 0 : false;
+  const hasChanges = user ? (editedName.trim() !== (user.FirstName || user.name) || selectedPhase !== (user.phase || user.Company)) && editedName.trim().length > 0 : false;
   const email = user?.Email?.[0]?.Value || user?.email || 'No email found';
 
   return (
