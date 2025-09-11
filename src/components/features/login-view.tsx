@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/context/user-context';
 import { useRouter } from 'next/navigation';
 import type { UserProfile } from '@/services/user-service';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function LoginView() {
   const { login } = useUser();
@@ -59,5 +60,13 @@ export default function LoginView() {
     }
   }, [login, toast, router]);
 
-  return <div id="login-container" />;
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-muted/40">
+        <Card className="w-full max-w-md">
+            <CardContent className="p-6">
+                <div id="login-container" />
+            </CardContent>
+        </Card>
+    </div>
+  );
 }
