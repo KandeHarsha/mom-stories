@@ -73,7 +73,15 @@ export default function LoginView() {
       LRObject.init('auth', {
         container: 'login-container',
         isForgotpassword: false,
-        onSuccess: function (response: any) { console.log('login successful:', response); },
+        onSuccess: function (response: any) { 
+          console.log('login successful:', response);
+          if (response.errorCode) {
+            return { error: response.error || 'Failed to login' };
+          }
+      localStorage.setItem('session_token', response.access_token);
+      localStorage.setItem('uid', response.Profile.Uid);
+      // setUser(syncUserObject(response.profile));
+        },
         onError: function (error: any) { console.error('login error:', error); },
       });
     }
