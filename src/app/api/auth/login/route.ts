@@ -1,41 +1,37 @@
-
 // src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { loginUser, loginSchema } from '@/services/auth-service';
 import { cookies } from 'next/headers';
+import { z } from 'zod';
+
+// This endpoint is now primarily for setting the session cookie after a successful client-side login.
+const loginSessionSchema = z.object({
+  token: z.string().min(1, 'Access token is required.'),
+});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const validatedData = loginSchema.safeParse(body);
+    const validatedData = loginSessionSchema.safeParse(body);
 
     if (!validatedData.success) {
-      return NextResponse.json({ error: validatedData.error.errors.map(e => e.message).join(', ') }, { status: 400 });
+      return NextResponse.json({ error: validatedData.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const loginResponse = await loginUser(validatedData.data);
-    
+    // The access token is received from the client after LoginRadius onSuccess
+    const { token } = validatedData.data;
+
     // Set a session cookie for middleware to read
-    (await
-      // Set a session cookie for middleware to read
-      cookies()).set('session', 'true', {
+    cookies().set('session', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 7, // One week
-        // expires: loginResponse.expires_in || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days if expires_in not provided
         path: '/',
     });
 
-    // Send the access token and profile data to the frontend
-    return NextResponse.json({ 
-        success: true, 
-        message: 'Logged in successfully.',
-        token: loginResponse.access_token,
-        profile: loginResponse.Profile
-    }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Session created successfully.'}, { status: 200 });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ error: errorMessage }, { status: 401 }); // Unauthorized
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

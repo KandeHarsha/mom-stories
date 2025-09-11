@@ -12,7 +12,7 @@ interface UserContextType {
   user: UserProfile | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
+  login: (loginResponse: { access_token: string, Profile: UserProfile }) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   updateUser: (user: UserProfile | null) => void;
 }
@@ -79,26 +79,36 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     setUser(syncUserObject(newUserState));
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (loginResponse: { access_token: string, Profile: UserProfile }) => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        return { error: data.error || 'Failed to login' };
-      }
-      localStorage.setItem('session_token', data.token);
-      localStorage.setItem('uid', data.profile.Uid);
-      setUser(syncUserObject(data.profile));
-      return {};
+        // 1. Store token and UID in local storage for client-side API calls
+        localStorage.setItem('session_token', loginResponse.access_token);
+        localStorage.setItem('uid', loginResponse.Profile.Uid);
+
+        // 2. Call server to set the HTTP-only session cookie for middleware
+        const sessionResponse = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: loginResponse.access_token }),
+        });
+
+        const sessionData = await sessionResponse.json();
+        if (!sessionResponse.ok) {
+            throw new Error(sessionData.error || 'Failed to create server session.');
+        }
+
+        // 3. Update the user state in the context
+        setUser(syncUserObject(loginResponse.Profile));
+        return {};
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        // Clean up on failure
+        localStorage.removeItem('session_token');
+        localStorage.removeItem('uid');
         return { error: errorMessage };
     }
-  };
+};
+
 
   const logout = async () => {
     try {
