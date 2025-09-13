@@ -20,7 +20,8 @@ export default function LoginView() {
         callbackUrl: window.location.origin,
         resetPasswordUrl: window.location.origin,
         OtpLength: 5,
-        OtpType: 'ALPHANUMERICONLYCAPSLETTER'
+        OtpType: 'ALPHANUMERICONLYCAPSLETTER',
+        verificationUrl: process.env.NEXT_PUBLIC_BASE_URL + '/login'
       };
 
       var LRObject = new window.LoginRadiusSDK(commonOptions);

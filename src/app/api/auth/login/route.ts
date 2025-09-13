@@ -21,7 +21,9 @@ export async function POST(request: Request) {
     const { token } = validatedData.data;
 
     // Set a session cookie for middleware to read
-    cookies().set('session', token, {
+    (await
+      // Set a session cookie for middleware to read
+      cookies()).set('session', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 7, // One week
