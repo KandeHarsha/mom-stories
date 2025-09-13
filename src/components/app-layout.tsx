@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   Box,
   PanelLeft,
-  Bookmark,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -29,7 +28,6 @@ const navItems = [
   { href: '/memory-box', label: 'Memory Box', icon: Box },
   { href: '/ai-support', label: 'Gentle AI Support', icon: HeartHandshake },
   { href: '/health', label: 'Health Tracker', icon: Baby },
-  { href: '/saved-answers', label: 'Saved Answers', icon: Bookmark },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {

@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun, LogIn, Heart, LogOut, Bookmark } from "lucide-react";
+import { Moon, Sun, LogIn, Heart, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "./ui/badge";
@@ -42,10 +42,10 @@ export function AppHeader() {
   return (
     <div className="border-b w-full">
       <div className="flex h-16 items-center px-4 md:px-8">
-         {isLoggedIn && user && user.phase && (
+         {isLoggedIn && user && (user.phase || user.Company) && (
             <Badge variant="outline" className="hidden sm:flex items-center gap-2">
               <Heart className="h-4 w-4 text-primary" />
-              <span>{motherhoodStages[user.phase as keyof typeof motherhoodStages]}</span>
+              <span>{motherhoodStages[(user.phase || user.Company) as keyof typeof motherhoodStages]}</span>
             </Badge>
           )}
         <div className="ml-auto flex items-center space-x-4">
@@ -53,11 +53,6 @@ export function AppHeader() {
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
-          {isLoggedIn && (
-             <Button variant="ghost" size="icon" onClick={() => router.push('/saved-answers')} aria-label="Saved Answers">
-                <Bookmark className="h-[1.2rem] w-[1.2rem]" />
-             </Button>
-          )}
           {isLoggedIn && user ? <UserNav /> : (
             <Button asChild>
               <Link href="/login">
