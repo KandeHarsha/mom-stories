@@ -65,12 +65,12 @@ export async function registerUser(data: RegisterInput): Promise<any> {
             },
             {
                 params: {
-                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
                     verificationurl: `${process.env.BASE_URL}/api/auth/verify`
                 },
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-LoginRadius-Sott': process.env.LOGINRADIUS_SOTT // SOTT required for registration
+                    'X-LoginRadius-Sott': process.env.NEXT_PUBLIC_LOGINRADIUS_SOTT // SOTT required for registration
                 }
             }
         );
@@ -91,7 +91,7 @@ export async function loginUser(data: LoginInput): Promise<any> {
             },
             {
                 params: {
-                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
                     apisecret: process.env.LOGINRADIUS_API_SECRET,
                 },
                 headers: { 'Content-Type': 'application/json' }
@@ -109,7 +109,7 @@ export async function validateAccessToken(token: string): Promise<any> {
              `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/access_token/validate`,
              {
                 params: {
-                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
                     apisecret: process.env.LOGINRADIUS_API_SECRET,
                 },
                 headers: { 
@@ -130,7 +130,7 @@ export async function getUserProfile(accessToken: string): Promise<any> {
             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
             {
                 params: {
-                    apikey: process.env.LOGINRADIUS_API_KEY
+                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY
                 },
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -151,7 +151,7 @@ export async function updateUserProfile(accessToken: string, profileFields: Reco
             {FirstName: profileFields.name, Company: profileFields.phase},
             {
                 params: {
-                    apikey: process.env.LOGINRADIUS_API_KEY
+                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY
                 },
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -171,7 +171,7 @@ export async function verifyEmail(vtoken: string): Promise<any> {
             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/email`,
             {
                 params: {
-                    apikey: process.env.LOGINRADIUS_API_KEY,
+                    apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
                     verificationtoken: vtoken,
                     verificationtype: 'emailverification'
                 }
