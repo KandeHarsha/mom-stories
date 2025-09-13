@@ -1,3 +1,4 @@
+
 // src/components/features/ai-support-view.tsx
 'use client';
 
@@ -7,19 +8,22 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { HeartHandshake, Loader2, Send } from 'lucide-react';
+import { HeartHandshake, Loader2, Send, Bookmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { type Memory } from '@/services/memory-service';
 
 interface Message {
   id: number;
   text: string;
   sender: 'user' | 'ai';
+  questionForAi?: string;
 }
 
 function AiSupportComponent() {
   const searchParams = useSearchParams();
   const initialQuestion = searchParams.get('question');
+  const [isSaving, startSaveTransition] = useTransition();
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -32,6 +36,45 @@ function AiSupportComponent() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('session_token');
+    return {
+      'Authorization': `Bearer ${token}`,
+    };
+  };
+
+  const handleSaveResponse = (question: string, answer: string) => {
+    const formData = new FormData();
+    formData.append('title', `AI: ${question}`);
+    formData.append('text', answer);
+    formData.append('isAiResponse', 'true');
+    
+    startSaveTransition(async () => {
+      try {
+        const response = await fetch('/api/memories', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: formData,
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.details || 'Failed to save response');
+        }
+        toast({
+          title: 'Response Saved!',
+          description: 'You can find this response in your Saved Answers.',
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+          variant: 'destructive',
+          title: 'Oh no! Something went wrong.',
+          description: errorMessage,
+        });
+      }
+    });
+  }
 
   const fetchAnswer = (question: string) => {
     const newMessages: Message[] = [
@@ -56,7 +99,7 @@ function AiSupportComponent() {
         if (result.answer) {
             setMessages((prev) => [
               ...prev,
-              { id: Date.now() + 1, text: result.answer!, sender: 'ai' },
+              { id: Date.now() + 1, text: result.answer!, sender: 'ai', questionForAi: question },
             ]);
         }
       } catch(error) {
@@ -73,10 +116,8 @@ function AiSupportComponent() {
 
   useEffect(() => {
     if (initialQuestion) {
-      // Use a timeout to ensure the state has settled from the initial render
       setTimeout(() => fetchAnswer(initialQuestion), 0);
     }
-  // This should only run once when the component mounts with an initial question.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuestion]);
 
@@ -126,15 +167,23 @@ function AiSupportComponent() {
                         </AvatarFallback>
                         </Avatar>
                     )}
-                    <div
-                        className={cn(
-                        'max-w-md rounded-lg p-3 text-sm',
-                        message.sender === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-secondary'
-                        )}
-                    >
-                        {message.text}
+                    <div className="flex flex-col gap-2 items-end">
+                      <div
+                          className={cn(
+                          'max-w-md rounded-lg p-3 text-sm',
+                          message.sender === 'user'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-secondary'
+                          )}
+                      >
+                          {message.text}
+                      </div>
+                      {message.sender === 'ai' && message.questionForAi && (
+                        <Button variant="ghost" size="sm" onClick={() => handleSaveResponse(message.questionForAi!, message.text)} disabled={isSaving}>
+                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
+                           Save for later
+                        </Button>
+                      )}
                     </div>
                      {message.sender === 'user' && (
                         <Avatar className="h-8 w-8">

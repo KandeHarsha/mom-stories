@@ -1,3 +1,4 @@
+
 // src/app/api/memories/route.ts
 import { NextResponse } from 'next/server';
 import { getMemories, addMemory } from '@/services/memory-service';
@@ -13,7 +14,10 @@ export async function GET(request: Request) {
         }
         
         const userProfileResponse = await getUserProfile(token);
-        const memories = await getMemories(userProfileResponse.Uid);
+        const { searchParams } = new URL(request.url);
+        const isAiResponse = searchParams.get('isAiResponse');
+
+        const memories = await getMemories(userProfileResponse.Uid, isAiResponse ? isAiResponse === 'true' : undefined);
         return new NextResponse(JSON.stringify(memories), { status: 200 });
     } catch (error) {
         console.error('Get Memories Error:', error);
@@ -38,6 +42,7 @@ export async function POST(request: Request) {
         const text = formData.get('text') as string | null;
         const imageFile = formData.get('image') as File | null;
         const voiceNoteFile = formData.get('voiceNote') as File | null;
+        const isAiResponse = formData.get('isAiResponse') === 'true';
         
         if(!title) {
              return new NextResponse(JSON.stringify({ error: 'Title is required.' }), { status: 400 });
@@ -49,10 +54,12 @@ export async function POST(request: Request) {
             userId: string;
             imageUrl?: string;
             voiceNoteUrl?: string;
+            isAiResponse: boolean;
         } = {
             title,
             text: text || '',
             userId: userId,
+            isAiResponse: isAiResponse,
         };
 
         if (imageFile && imageFile.size > 0) {

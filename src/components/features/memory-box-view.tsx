@@ -1,3 +1,4 @@
+
 // src/components/features/memory-box-view.tsx
 'use client';
 import React, { useState, useTransition, useRef, useEffect } from 'react';
@@ -35,7 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Box, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle, Trash2, BookText, Music } from 'lucide-react';
+import { Box, ImagePlus, Mic, Loader2, Paperclip, X, Square, AlertCircle, PlusCircle, Trash2, BookText, Music, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { type Memory } from '@/services/memory-service';
@@ -277,6 +278,14 @@ export default function MemoryBoxView() {
   }
 
   const renderCardContent = (memory: Memory) => {
+    if (memory.isAiResponse) {
+       return (
+        <div className="flex flex-col items-center justify-center h-full p-4 bg-secondary">
+          <MessageSquare className="w-16 h-16 text-primary" />
+          <p className="mt-4 text-center text-muted-foreground">Saved AI Answer</p>
+        </div>
+      )
+    }
     if (memory.imageUrl) {
       return (
         <div className="aspect-square w-full overflow-hidden">

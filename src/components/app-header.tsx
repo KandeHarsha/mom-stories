@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Moon, Sun, LogIn, Heart, LogOut } from "lucide-react";
+import { Moon, Sun, LogIn, Heart, LogOut, Bookmark } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "./ui/badge";
@@ -37,6 +37,7 @@ const motherhoodStages = {
 export function AppHeader() {
   const { toggleTheme } = useTheme();
   const { user, isLoggedIn } = useUser();
+  const router = useRouter();
 
   return (
     <div className="border-b w-full">
@@ -52,6 +53,11 @@ export function AppHeader() {
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
+          {isLoggedIn && (
+             <Button variant="ghost" size="icon" onClick={() => router.push('/saved-answers')} aria-label="Saved Answers">
+                <Bookmark className="h-[1.2rem] w-[1.2rem]" />
+             </Button>
+          )}
           {isLoggedIn && user ? <UserNav /> : (
             <Button asChild>
               <Link href="/login">
