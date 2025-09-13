@@ -37,14 +37,15 @@ const motherhoodStages = {
 export function AppHeader() {
   const { toggleTheme } = useTheme();
   const { user, isLoggedIn } = useUser();
+  const router = useRouter();
 
   return (
     <div className="border-b w-full">
       <div className="flex h-16 items-center px-4 md:px-8">
-         {isLoggedIn && user && user.phase && (
+         {isLoggedIn && user && (user.phase || user.Company) && (
             <Badge variant="outline" className="hidden sm:flex items-center gap-2">
               <Heart className="h-4 w-4 text-primary" />
-              <span>{motherhoodStages[user.phase as keyof typeof motherhoodStages]}</span>
+              <span>{motherhoodStages[(user.phase || user.Company) as keyof typeof motherhoodStages]}</span>
             </Badge>
           )}
         <div className="ml-auto flex items-center space-x-4">

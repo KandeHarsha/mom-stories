@@ -39,7 +39,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="flex h-16 items-center border-b px-6">
           <Link href="/dashboard" className="flex items-center gap-2 font-headline font-semibold text-lg">
             <HeartHandshake className="h-6 w-6 text-primary" />
-            <span>Mama's Embrace</span>
+            <span>Mom Stories</span>
           </Link>
         </div>
         <nav className="flex-1 overflow-auto py-4">
@@ -74,7 +74,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
                 >
                   <HeartHandshake className="h-5 w-5 transition-all group-hover:scale-110" />
-                  <span className="sr-only">Mama's Embrace</span>
+                  <span className="sr-only">Mom Stories</span>
                 </Link>
                 {navItems.map((item) => (
                   <Link

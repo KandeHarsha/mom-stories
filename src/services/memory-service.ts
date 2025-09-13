@@ -1,3 +1,4 @@
+
 // src/services/memory-service.ts
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, deleteDoc, doc, where, getDoc } from 'firebase/firestore';
@@ -10,6 +11,7 @@ export interface Memory {
     createdAt: any; // Can be Timestamp on read, FieldValue on write
     imageUrl?: string;
     voiceNoteUrl?: string;
+    isAiResponse?: boolean;
 }
 
 export interface MemoryData extends Omit<Memory, 'id' | 'createdAt'> {
@@ -45,12 +47,20 @@ export async function deleteMemory(memoryId: string, userId: string): Promise<vo
     }
 }
 
-export async function getMemories(userId: string): Promise<Memory[]> {
+export async function getMemories(userId: string, isAiResponse?: boolean): Promise<Memory[]> {
     try {
-        const q = query(
-            collection(db, "memories"), 
+        const constraints = [
             where("userId", "==", userId),
             orderBy("createdAt", "desc")
+        ];
+
+        if (isAiResponse !== undefined) {
+            constraints.push(where("isAiResponse", "==", isAiResponse));
+        }
+        
+        const q = query(
+            collection(db, "memories"), 
+            ...constraints
         );
         const querySnapshot = await getDocs(q);
         const memories: Memory[] = [];
