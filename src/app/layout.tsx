@@ -3,7 +3,6 @@
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from '@/context/user-context';
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function RootLayout({
   children,
@@ -13,7 +12,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-         <title>Mama's Embrace</title>
+         <title>Mom Stories</title>
         <meta name="description" content="An AI-powered companion for mothers at every stage." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -24,7 +23,6 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <UserProvider>
           {children}
-          <SpeedInsights />
         </UserProvider>
         <Toaster />
       </body>
