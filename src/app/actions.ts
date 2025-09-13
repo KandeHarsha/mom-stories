@@ -40,29 +40,6 @@ export async function getJournalingPrompt(formData: FormData) {
   }
 }
 
-const supportSchema = z.object({
-  question: z.string().min(1, 'Question cannot be empty.'),
-});
-
-export async function getSupportAnswer(formData: FormData) {
-  const rawData = {
-    question: formData.get('question'),
-  };
-
-  const validatedInput = supportSchema.safeParse(rawData);
-
-  if (!validatedInput.success) {
-      return { error: validatedInput.error.errors.map(e => e.message).join(', ') };
-  }
-  
-  try {
-      const result = await aiPoweredSupport(validatedInput.data);
-      return { answer: result.answer };
-  } catch (e) {
-      return { error: 'Failed to get an answer. Please try again later.' };
-  }
-}
-
 export async function saveJournalEntryAction(formData: FormData) {
     const userId = formData.get('userId') as string;
     if (!userId) {

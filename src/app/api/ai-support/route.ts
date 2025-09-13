@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
 
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing question in request body' }, { status: 400 });
     }
 
-    const response = await aiPoweredSupport(question);
+    const response = await aiPoweredSupport({ question });
 
     return NextResponse.json(response);
   } catch (error) {

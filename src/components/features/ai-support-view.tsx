@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HeartHandshake, Loader2, Send } from 'lucide-react';
-import { getSupportAnswer } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -41,24 +40,33 @@ function AiSupportComponent() {
     ];
     setMessages(newMessages);
 
-    const formData = new FormData();
-    formData.append('question', question);
-
     startTransition(async () => {
-      const result = await getSupportAnswer(formData);
-      if (result.error) {
-        toast({
+      try {
+        const response = await fetch('/api/ai-support', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || result.error) {
+            throw new Error(result.error || 'Failed to get an answer.');
+        }
+
+        if (result.answer) {
+            setMessages((prev) => [
+              ...prev,
+              { id: Date.now() + 1, text: result.answer!, sender: 'ai' },
+            ]);
+        }
+      } catch(error) {
+         toast({
           variant: 'destructive',
           title: 'Error',
-          description: result.error,
+          description: (error as Error).message,
         });
         // Revert optimistic update on error
-        setMessages(messages); 
-      } else if (result.answer) {
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now() + 1, text: result.answer!, sender: 'ai' },
-        ]);
+        setMessages(messages);
       }
     });
   };
@@ -68,6 +76,8 @@ function AiSupportComponent() {
       // Use a timeout to ensure the state has settled from the initial render
       setTimeout(() => fetchAnswer(initialQuestion), 0);
     }
+  // This should only run once when the component mounts with an initial question.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuestion]);
 
 

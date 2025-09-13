@@ -63,7 +63,7 @@ export default function DashboardView() {
                 />
               </div>
               <Button type="submit" className="w-full">
-                Ask Your Question
+                Get Support
               </Button>
             </form>
           </CardContent>
