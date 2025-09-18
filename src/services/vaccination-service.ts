@@ -11,9 +11,10 @@ export interface Vaccination {
     status: boolean;
     description: string;
     order: number;
+    imageUrl?: string;
 }
 
-const defaultVaccinationSchedule: Omit<Vaccination, 'status'>[] = [
+const defaultVaccinationSchedule: Omit<Vaccination, 'status' | 'imageUrl'>[] = [
     { id: 'hepb1', order: 1, name: 'Hepatitis B (HepB)', age: 'Birth', dose: '1st', description: 'Protects against Hepatitis B, a liver disease that can be serious. The first shot is usually given within 24 hours of birth.' },
     { id: 'hepb2', order: 2, name: 'Hepatitis B (HepB)', age: '1-2 months', dose: '2nd', description: 'The second dose of the Hepatitis B vaccine series, continuing protection.' },
     { id: 'rv1', order: 3, name: 'Rotavirus (RV)', age: '2 months', dose: '1st', description: 'Protects against rotavirus, which causes severe diarrhea, vomiting, fever, and abdominal pain, mostly in babies and young children.' },
@@ -43,6 +44,18 @@ export async function getVaccinations(userId: string): Promise<Vaccination[]> {
     const userProfile = await getUserProfile(userId);
 
     if (userProfile && userProfile.vaccinations) {
+        // Ensure all default vaccinations are present for existing users
+        const userVaxIds = new Set(userProfile.vaccinations.map(v => v.id));
+        const missingVax = defaultVaccinationSchedule
+            .filter(v => !userVaxIds.has(v.id))
+            .map(v => ({ ...v, status: false }));
+
+        if (missingVax.length > 0) {
+            const combinedVax = [...userProfile.vaccinations, ...missingVax].sort((a,b) => a.order - b.order);
+            await updateUserProfileInDb(userId, { vaccinations: combinedVax });
+            return combinedVax;
+        }
+
         return userProfile.vaccinations.sort((a, b) => a.order - b.order);
     }
     
@@ -50,16 +63,27 @@ export async function getVaccinations(userId: string): Promise<Vaccination[]> {
     return initializeVaccinationsForUser(userId);
 }
 
-export async function updateVaccinationStatus(userId: string, vaccinationId: string, status: boolean): Promise<void> {
+export async function updateVaccinationStatus(userId: string, vaccinationId: string, status: boolean, imageUrl?: string): Promise<void> {
     const userProfile = await getUserProfile(userId);
     
     if (!userProfile || !userProfile.vaccinations) {
         throw new Error("User profile or vaccination schedule not found.");
     }
 
-    const updatedVaccinations = userProfile.vaccinations.map(vax => 
-        vax.id === vaccinationId ? { ...vax, status: status } : vax
-    );
+    const updatedVaccinations = userProfile.vaccinations.map(vax => {
+        if (vax.id === vaccinationId) {
+            const updatedVax = { ...vax, status };
+            if (imageUrl !== undefined) {
+                updatedVax.imageUrl = imageUrl;
+            }
+             // If un-checking, clear the image url
+            if (!status) {
+                delete updatedVax.imageUrl;
+            }
+            return updatedVax;
+        }
+        return vax;
+    });
 
     await updateUserProfileInDb(userId, { vaccinations: updatedVaccinations });
 }

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { updateVaccinationStatus } from '@/services/vaccination-service';
 import { getUserProfile } from '@/services/auth-service';
+import { uploadFileAndGetURL } from '@/services/journal-service';
 
 // Update vaccination status
 export async function PUT(request: Request, { params }: { params: { vaccinationId: string } }) {
@@ -21,14 +22,19 @@ export async function PUT(request: Request, { params }: { params: { vaccinationI
             return new NextResponse(JSON.stringify({ error: 'Vaccination ID is required.' }), { status: 400 });
         }
         
-        const { status } = await request.json();
-        if (typeof status !== 'boolean') {
-             return new NextResponse(JSON.stringify({ error: 'Status must be a boolean.' }), { status: 400 });
+        const formData = await request.formData();
+        const status = formData.get('status') === 'true';
+        const imageFile = formData.get('image') as File | null;
+        
+        let imageUrl: string | undefined = undefined;
+
+        if (imageFile && imageFile.size > 0) {
+            imageUrl = await uploadFileAndGetURL(imageFile, userProfileResponse.Uid, 'vaccination-tags');
         }
 
-        await updateVaccinationStatus(userProfileResponse.Uid, vaccinationId, status);
+        await updateVaccinationStatus(userProfileResponse.Uid, vaccinationId, status, imageUrl);
 
-        return new NextResponse(JSON.stringify({ success: true }), { status: 200 });
+        return new NextResponse(JSON.stringify({ success: true, imageUrl }), { status: 200 });
 
     } catch (error) {
         console.error('Update Vaccination Error:', error);

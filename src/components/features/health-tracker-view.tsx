@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -12,19 +12,31 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Baby, Smile, Loader2 } from 'lucide-react';
+import { Baby, Smile, Loader2, ImagePlus, X, Paperclip } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Vaccination } from '@/services/vaccination-service';
 import { Skeleton } from '../ui/skeleton';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import Image from 'next/image';
 
 
 const growthData = [
@@ -72,13 +84,20 @@ export default function HealthTrackerView() {
   const [isLoading, startLoadingTransition] = useTransition();
   const [isUpdating, startUpdateTransition] = useTransition();
   const { toast } = useToast();
+  
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [selectedVax, setSelectedVax] = useState<Vaccination | null>(null);
+  const [vaxImageFile, setVaxImageFile] = useState<File | null>(null);
+  const [vaxImagePreview, setVaxImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (isJson = true) => {
     const token = localStorage.getItem('session_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
+    const headers: HeadersInit = { 'Authorization': `Bearer ${token}` };
+    if (isJson) {
+      headers['Content-Type'] = 'application/json';
+    }
+    return headers;
   };
 
   useEffect(() => {
@@ -100,39 +119,93 @@ export default function HealthTrackerView() {
         });
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
-  const handleVaxStatusChange = (id: string, checked: boolean) => {
-    startUpdateTransition(async () => {
-      try {
-        const response = await fetch(`/api/vaccinations/${id}`, {
-          method: 'PUT',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ status: checked }),
-        });
+  const handleVaxStatusChange = (vax: Vaccination, checked: boolean) => {
+    if (checked) {
+      setSelectedVax(vax);
+      setIsConfirming(true);
+    } else {
+      // If unchecking, update immediately without a photo
+      updateStatus(vax.id, false);
+    }
+  };
 
-        if (!response.ok) {
-          throw new Error('Failed to update vaccination status');
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setVaxImageFile(file);
+    if (vaxImagePreview) {
+      URL.revokeObjectURL(vaxImagePreview);
+    }
+    if (file) {
+      setVaxImagePreview(URL.createObjectURL(file));
+    } else {
+      setVaxImagePreview(null);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setVaxImageFile(null);
+    if (vaxImagePreview) {
+      URL.revokeObjectURL(vaxImagePreview);
+      setVaxImagePreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const resetDialog = () => {
+    setIsConfirming(false);
+    setSelectedVax(null);
+    handleRemoveFile();
+  }
+
+  const handleConfirmUpdate = () => {
+    if (!selectedVax) return;
+    updateStatus(selectedVax.id, true, vaxImageFile);
+  };
+  
+  const updateStatus = (id: string, status: boolean, imageFile: File | null = null) => {
+    startUpdateTransition(async () => {
+        const formData = new FormData();
+        formData.append('status', String(status));
+        if (imageFile) {
+            formData.append('image', imageFile);
         }
 
-        setVaccinations(
-          vaccinations.map((vax) =>
-            vax.id === id ? { ...vax, status: checked } : vax
-          )
-        );
-        toast({
-            title: 'Status Updated',
-            description: 'Vaccination status has been saved.',
-        });
-      } catch (error) {
-         toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: (error as Error).message,
-        });
-      }
+        try {
+            const response = await fetch(`/api/vaccinations/${id}`, {
+                method: 'PUT',
+                headers: getAuthHeaders(false), // Not JSON content type
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update vaccination status');
+            }
+            
+            const result = await response.json();
+
+            setVaccinations(vaccinations.map((v) =>
+                v.id === id ? { ...v, status, imageUrl: result.imageUrl || v.imageUrl } : v
+            ));
+
+            toast({
+                title: 'Status Updated',
+                description: 'Vaccination status has been saved.',
+            });
+            resetDialog();
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: (error as Error).message,
+            });
+        }
     });
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -198,23 +271,31 @@ export default function HealthTrackerView() {
                                        <div className="font-semibold">{vax.name}</div>
                                        <div className="text-sm text-muted-foreground">{`Recommended Age: ${vax.age} (Dose: ${vax.dose})`}</div>
                                    </div>
-                                   <Badge variant={vax.status ? 'default' : 'secondary'} className={cn(vax.status ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status ? 'Complete' : 'Pending'}</Badge>
+                                   <Badge variant={vax.status ? 'default' : 'secondary'} className={cn("mr-4", vax.status ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status ? 'Complete' : 'Pending'}</Badge>
                                  </div>
                                </AccordionTrigger>
                                <AccordionContent>
                                  <p className="text-muted-foreground mb-4">{vax.description}</p>
+                                 {vax.imageUrl && (
+                                    <div className="mb-4">
+                                        <Label>Uploaded Document</Label>
+                                        <div className="relative mt-2 w-32 h-32">
+                                          <Image src={vax.imageUrl} alt="Vaccination document" layout="fill" objectFit="cover" className="rounded-md"/>
+                                        </div>
+                                    </div>
+                                  )}
                                  <div className="flex items-center space-x-2">
                                      <Checkbox
                                        id={`vax-check-${vax.id}`}
                                        checked={vax.status}
-                                       onCheckedChange={(checked) => handleVaxStatusChange(vax.id, checked as boolean)}
+                                       onCheckedChange={(checked) => handleVaxStatusChange(vax, checked as boolean)}
                                        aria-label={`Mark ${vax.name} as ${vax.status ? 'incomplete' : 'complete'}`}
                                        disabled={isUpdating}
                                      />
                                      <Label htmlFor={`vax-check-${vax.id}`} className="cursor-pointer">
-                                        Mark as complete
+                                        {vax.status ? 'Mark as incomplete' : 'Mark as complete'}
                                      </Label>
-                                     {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+                                     {isUpdating && selectedVax?.id === vax.id && <Loader2 className="h-4 w-4 animate-spin" />}
                                  </div>
                                </AccordionContent>
                              </AccordionItem>
@@ -263,6 +344,57 @@ export default function HealthTrackerView() {
                 </div>
             </TabsContent>
         </Tabs>
+        
+         <Dialog open={isConfirming} onOpenChange={(open) => !open && resetDialog()}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Confirm Vaccination</DialogTitle>
+                    <DialogDescription>
+                        You are marking "{selectedVax?.name}" as complete. You can optionally upload a photo of the vaccination record.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="vax-image-upload">Upload Record (Optional)</Label>
+                         <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                            <label htmlFor="vax-image-upload" className="cursor-pointer">
+                            <ImagePlus className="h-5 w-5"/>
+                            <span>{vaxImageFile ? 'Change photo' : 'Upload photo'}</span>
+                            </label>
+                        </Button>
+                        <Input id="vax-image-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
+                    </div>
+
+                    {vaxImagePreview && vaxImageFile && (
+                        <div className="space-y-2">
+                            <Label>Photo Preview</Label>
+                            <div className="relative group">
+                                <Image src={vaxImagePreview} alt="Preview" width={200} height={200} className="rounded-lg w-full h-auto object-cover"/>
+                                <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-50 group-hover:opacity-100 transition-opacity" onClick={handleRemoveFile}>
+                                <X className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground border rounded-md p-2">
+                                <Paperclip className="h-4 w-4"/>
+                                <span>{vaxImageFile.name}</span>
+                                <span className="ml-auto">{Math.round(vaxImageFile.size / 1024)} KB</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary" onClick={resetDialog}>
+                            Cancel
+                        </Button>
+                    </DialogClose>
+                    <Button onClick={handleConfirmUpdate} disabled={isUpdating}>
+                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
