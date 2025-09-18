@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Baby, Smile, Loader2, ImagePlus, X, Paperclip } from 'lucide-react';
+import { Baby, Smile, Loader2, ImagePlus, X, Paperclip, View } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -90,6 +90,9 @@ export default function HealthTrackerView() {
   const [vaxImageFile, setVaxImageFile] = useState<File | null>(null);
   const [vaxImagePreview, setVaxImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
+
 
   const getAuthHeaders = (isJson = true) => {
     const token = localStorage.getItem('session_token');
@@ -277,12 +280,10 @@ export default function HealthTrackerView() {
                                <AccordionContent>
                                  <p className="text-muted-foreground mb-4">{vax.description}</p>
                                  {vax.imageUrl && (
-                                    <div className="mb-4">
-                                        <Label>Uploaded Document</Label>
-                                        <div className="relative mt-2 w-32 h-32">
-                                          <Image src={vax.imageUrl} alt="Vaccination document" layout="fill" objectFit="cover" className="rounded-md"/>
-                                        </div>
-                                    </div>
+                                    <Button variant="outline" size="sm" className="mb-4" onClick={() => setViewingImageUrl(vax.imageUrl!)}>
+                                      <View className="mr-2 h-4 w-4" />
+                                      View Document
+                                    </Button>
                                   )}
                                  <div className="flex items-center space-x-2">
                                      <Checkbox
@@ -395,6 +396,18 @@ export default function HealthTrackerView() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <Dialog open={!!viewingImageUrl} onOpenChange={() => setViewingImageUrl(null)}>
+            <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-4xl max-h-[90vh]">
+                 <DialogHeader>
+                    <DialogTitle>Vaccination Document</DialogTitle>
+                </DialogHeader>
+                <div className="relative h-[75vh]">
+                    <Image src={viewingImageUrl || ''} alt="Vaccination Document" layout="fill" objectFit="contain" className="rounded-md" />
+                </div>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
+
