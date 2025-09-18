@@ -346,14 +346,14 @@ export default function HealthTrackerView() {
         </Tabs>
         
          <Dialog open={isConfirming} onOpenChange={(open) => !open && resetDialog()}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Confirm Vaccination</DialogTitle>
                     <DialogDescription>
                         You are marking "{selectedVax?.name}" as complete. You can optionally upload a photo of the vaccination record.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 flex-grow overflow-y-auto pr-4 -mr-4">
                     <div className="space-y-2">
                         <Label htmlFor="vax-image-upload">Upload Record (Optional)</Label>
                          <Button variant="outline" className="w-full justify-start gap-2" asChild>
@@ -382,7 +382,7 @@ export default function HealthTrackerView() {
                         </div>
                     )}
                 </div>
-                <DialogFooter>
+                <DialogFooter className="pt-4 flex-shrink-0">
                     <DialogClose asChild>
                         <Button type="button" variant="secondary" onClick={resetDialog}>
                             Cancel
