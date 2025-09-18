@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Baby, Smile } from 'lucide-react';
+import { Baby, Smile, Loader2 } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -22,6 +22,9 @@ import {
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
+import { useToast } from '@/hooks/use-toast';
+import type { Vaccination } from '@/services/vaccination-service';
+import { Skeleton } from '../ui/skeleton';
 
 
 const growthData = [
@@ -38,21 +41,6 @@ const babyChartConfig = {
   weight: { label: 'Weight (lbs)', color: 'hsl(var(--primary))' },
   length: { label: 'Length (in)', color: 'hsl(var(--accent-foreground))' },
 };
-
-const initialVaccinations = [
-    { id: 1, name: 'Hepatitis B (HepB)', age: 'Birth', dose: '1st', status: true, description: 'Protects against Hepatitis B, a liver disease that can be serious. The first shot is usually given within 24 hours of birth.' },
-    { id: 2, name: 'Hepatitis B (HepB)', age: '1-2 months', dose: '2nd', status: true, description: 'The second dose of the Hepatitis B vaccine series, continuing protection.' },
-    { id: 3, name: 'Rotavirus (RV)', age: '2 months', dose: '1st', status: true, description: 'Protects against rotavirus, which causes severe diarrhea, vomiting, fever, and abdominal pain, mostly in babies and young children.' },
-    { id: 4, name: 'DTaP', age: '2 months', dose: '1st', status: true, description: 'Protects against Diphtheria, Tetanus, and Pertussis (whooping cough).' },
-    { id: 5, name: 'Hib', age: '2 months', dose: '1st', status: true, description: 'Protects against Haemophilus influenzae type b, a type of bacteria that can cause serious illness, including meningitis and pneumonia.' },
-    { id: 6, name: 'Pneumococcal (PCV13)', age: '2 months', dose: '1st', status: true, description: 'Protects against pneumococcal disease, which can lead to ear infections, pneumonia, and meningitis.' },
-    { id: 7, name: 'Polio (IPV)', age: '2 months', dose: '1st', status: true, description: 'Protects against polio, a disabling and life-threatening disease caused by the poliovirus.' },
-    { id: 8, name: 'Rotavirus (RV)', age: '4 months', dose: '2nd', status: false, description: 'Second dose to build immunity against rotavirus.' },
-    { id: 9, name: 'DTaP', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the DTaP series.' },
-    { id: 10, name: 'Hib', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the Hib series.' },
-    { id: 11, name: 'Pneumococcal (PCV13)', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the pneumococcal conjugate vaccine.' },
-    { id: 12, name: 'Polio (IPV)', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the inactivated poliovirus vaccine.' },
-];
 
 const momSleepData = [
   { day: 'Mon', hours: 5 },
@@ -80,15 +68,72 @@ const momChartConfig = {
 }
 
 export default function HealthTrackerView() {
-  const [vaccinations, setVaccinations] = useState(initialVaccinations);
+  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
+  const [isLoading, startLoadingTransition] = useTransition();
+  const [isUpdating, startUpdateTransition] = useTransition();
+  const { toast } = useToast();
 
-  const handleVaxStatusChange = (id: number, checked: boolean) => {
-    setVaccinations(
-      vaccinations.map((vax) =>
-        vax.id === id ? { ...vax, status: checked } : vax
-      )
-    );
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('session_token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
   };
+
+  useEffect(() => {
+    startLoadingTransition(async () => {
+      try {
+        const response = await fetch('/api/vaccinations', {
+          headers: getAuthHeaders(),
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch vaccinations');
+        }
+        const data = await response.json();
+        setVaccinations(data);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: (error as Error).message,
+        });
+      }
+    });
+  }, [toast]);
+
+  const handleVaxStatusChange = (id: string, checked: boolean) => {
+    startUpdateTransition(async () => {
+      try {
+        const response = await fetch(`/api/vaccinations/${id}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: checked }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update vaccination status');
+        }
+
+        setVaccinations(
+          vaccinations.map((vax) =>
+            vax.id === id ? { ...vax, status: checked } : vax
+          )
+        );
+        toast({
+            title: 'Status Updated',
+            description: 'Vaccination status has been saved.',
+        });
+      } catch (error) {
+         toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: (error as Error).message,
+        });
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
         <div>
@@ -137,6 +182,13 @@ export default function HealthTrackerView() {
                          <CardDescription>A simplified tracker for your baby's immunizations. Always consult your pediatrician for official schedules.</CardDescription>
                     </CardHeader>
                     <CardContent>
+                      {isLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      ) : (
                         <Accordion type="single" collapsible className="w-full">
                            {vaccinations.map((vax) => (
                              <AccordionItem value={`item-${vax.id}`} key={vax.id}>
@@ -157,15 +209,18 @@ export default function HealthTrackerView() {
                                        checked={vax.status}
                                        onCheckedChange={(checked) => handleVaxStatusChange(vax.id, checked as boolean)}
                                        aria-label={`Mark ${vax.name} as ${vax.status ? 'incomplete' : 'complete'}`}
+                                       disabled={isUpdating}
                                      />
                                      <Label htmlFor={`vax-check-${vax.id}`} className="cursor-pointer">
                                         Mark as complete
                                      </Label>
+                                     {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
                                  </div>
                                </AccordionContent>
                              </AccordionItem>
                            ))}
                          </Accordion>
+                      )}
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -211,7 +266,3 @@ export default function HealthTrackerView() {
     </div>
   );
 }
-
-    
-
-    
