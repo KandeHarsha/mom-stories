@@ -1,6 +1,6 @@
 
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -8,19 +8,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Baby, Smile } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
+
 
 const growthData = [
   { month: 'Birth', weight: 7.5, length: 20 },
@@ -37,19 +38,19 @@ const babyChartConfig = {
   length: { label: 'Length (in)', color: 'hsl(var(--accent-foreground))' },
 };
 
-const vaccinations = [
-    { name: 'Hepatitis B (HepB)', age: 'Birth', doses: '1st', status: true },
-    { name: 'Hepatitis B (HepB)', age: '1-2 months', doses: '2nd', status: true },
-    { name: 'Rotavirus (RV)', age: '2 months', doses: '1st', status: true },
-    { name: 'DTaP', age: '2 months', doses: '1st', status: true },
-    { name: 'Hib', age: '2 months', doses: '1st', status: true },
-    { name: 'Pneumococcal (PCV13)', age: '2 months', doses: '1st', status: true },
-    { name: 'Polio (IPV)', age: '2 months', doses: '1st', status: true },
-    { name: 'Rotavirus (RV)', age: '4 months', doses: '2nd', status: false },
-    { name: 'DTaP', age: '4 months', doses: '2nd', status: false },
-    { name: 'Hib', age: '4 months', doses: '2nd', status: false },
-    { name: 'Pneumococcal (PCV13)', age: '4 months', doses: '2nd', status: false },
-    { name: 'Polio (IPV)', age: '4 months', doses: '2nd', status: false },
+const initialVaccinations = [
+    { id: 1, name: 'Hepatitis B (HepB)', age: 'Birth', dose: '1st', status: true, description: 'Protects against Hepatitis B, a liver disease that can be serious. The first shot is usually given within 24 hours of birth.' },
+    { id: 2, name: 'Hepatitis B (HepB)', age: '1-2 months', dose: '2nd', status: true, description: 'The second dose of the Hepatitis B vaccine series, continuing protection.' },
+    { id: 3, name: 'Rotavirus (RV)', age: '2 months', dose: '1st', status: true, description: 'Protects against rotavirus, which causes severe diarrhea, vomiting, fever, and abdominal pain, mostly in babies and young children.' },
+    { id: 4, name: 'DTaP', age: '2 months', dose: '1st', status: true, description: 'Protects against Diphtheria, Tetanus, and Pertussis (whooping cough).' },
+    { id: 5, name: 'Hib', age: '2 months', dose: '1st', status: true, description: 'Protects against Haemophilus influenzae type b, a type of bacteria that can cause serious illness, including meningitis and pneumonia.' },
+    { id: 6, name: 'Pneumococcal (PCV13)', age: '2 months', dose: '1st', status: true, description: 'Protects against pneumococcal disease, which can lead to ear infections, pneumonia, and meningitis.' },
+    { id: 7, name: 'Polio (IPV)', age: '2 months', dose: '1st', status: true, description: 'Protects against polio, a disabling and life-threatening disease caused by the poliovirus.' },
+    { id: 8, name: 'Rotavirus (RV)', age: '4 months', dose: '2nd', status: false, description: 'Second dose to build immunity against rotavirus.' },
+    { id: 9, name: 'DTaP', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the DTaP series.' },
+    { id: 10, name: 'Hib', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the Hib series.' },
+    { id: 11, name: 'Pneumococcal (PCV13)', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the pneumococcal conjugate vaccine.' },
+    { id: 12, name: 'Polio (IPV)', age: '4 months', dose: '2nd', status: false, description: 'Second dose of the inactivated poliovirus vaccine.' },
 ];
 
 const momSleepData = [
@@ -78,6 +79,15 @@ const momChartConfig = {
 }
 
 export default function HealthTrackerView() {
+  const [vaccinations, setVaccinations] = useState(initialVaccinations);
+
+  const handleVaxStatusChange = (id: number, checked: boolean) => {
+    setVaccinations(
+      vaccinations.map((vax) =>
+        vax.id === id ? { ...vax, status: checked } : vax
+      )
+    );
+  };
   return (
     <div className="space-y-6">
         <div>
@@ -126,28 +136,32 @@ export default function HealthTrackerView() {
                          <CardDescription>A simplified tracker for your baby's immunizations. Always consult your pediatrician for official schedules.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Vaccine</TableHead>
-                                    <TableHead>Recommended Age</TableHead>
-                                    <TableHead>Dose</TableHead>
-                                    <TableHead className="text-right">Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {vaccinations.map((vax) => (
-                                    <TableRow key={`${vax.name}-${vax.doses}`}>
-                                        <TableCell className="font-medium">{vax.name}</TableCell>
-                                        <TableCell>{vax.age}</TableCell>
-                                        <TableCell>{vax.doses}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Checkbox checked={vax.status} aria-label={`Mark ${vax.name} ${vax.doses} as complete`}/>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <Accordion type="single" collapsible className="w-full">
+                           {vaccinations.map((vax) => (
+                             <AccordionItem value={`item-${vax.id}`} key={vax.id}>
+                               <AccordionTrigger className="hover:no-underline">
+                                 <div className="flex items-center justify-between w-full">
+                                   <div className="flex items-center gap-4">
+                                     <Checkbox
+                                       checked={vax.status}
+                                       onCheckedChange={(checked) => handleVaxStatusChange(vax.id, checked as boolean)}
+                                       onClick={(e) => e.stopPropagation()}
+                                       aria-label={`Mark ${vax.name} as ${vax.status ? 'incomplete' : 'complete'}`}
+                                     />
+                                     <div className="text-left">
+                                       <div className="font-semibold">{vax.name}</div>
+                                       <div className="text-sm text-muted-foreground">{`Recommended Age: ${vax.age} (Dose: ${vax.dose})`}</div>
+                                     </div>
+                                   </div>
+                                   <Badge variant={vax.status ? 'default' : 'secondary'} className={cn(vax.status ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status ? 'Complete' : 'Pending'}</Badge>
+                                 </div>
+                               </AccordionTrigger>
+                               <AccordionContent>
+                                 <p className="pl-10 text-muted-foreground">{vax.description}</p>
+                               </AccordionContent>
+                             </AccordionItem>
+                           ))}
+                         </Accordion>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -193,3 +207,5 @@ export default function HealthTrackerView() {
     </div>
   );
 }
+
+    
