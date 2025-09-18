@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { Label } from '../ui/label';
 
 
 const growthData = [
@@ -141,23 +142,26 @@ export default function HealthTrackerView() {
                              <AccordionItem value={`item-${vax.id}`} key={vax.id}>
                                <AccordionTrigger className="hover:no-underline">
                                  <div className="flex items-center justify-between w-full">
-                                   <div className="flex items-center gap-4">
-                                     <Checkbox
-                                       checked={vax.status}
-                                       onCheckedChange={(checked) => handleVaxStatusChange(vax.id, checked as boolean)}
-                                       onClick={(e) => e.stopPropagation()}
-                                       aria-label={`Mark ${vax.name} as ${vax.status ? 'incomplete' : 'complete'}`}
-                                     />
-                                     <div className="text-left">
+                                   <div className="text-left">
                                        <div className="font-semibold">{vax.name}</div>
                                        <div className="text-sm text-muted-foreground">{`Recommended Age: ${vax.age} (Dose: ${vax.dose})`}</div>
-                                     </div>
                                    </div>
                                    <Badge variant={vax.status ? 'default' : 'secondary'} className={cn(vax.status ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status ? 'Complete' : 'Pending'}</Badge>
                                  </div>
                                </AccordionTrigger>
                                <AccordionContent>
-                                 <p className="pl-10 text-muted-foreground">{vax.description}</p>
+                                 <p className="text-muted-foreground mb-4">{vax.description}</p>
+                                 <div className="flex items-center space-x-2">
+                                     <Checkbox
+                                       id={`vax-check-${vax.id}`}
+                                       checked={vax.status}
+                                       onCheckedChange={(checked) => handleVaxStatusChange(vax.id, checked as boolean)}
+                                       aria-label={`Mark ${vax.name} as ${vax.status ? 'incomplete' : 'complete'}`}
+                                     />
+                                     <Label htmlFor={`vax-check-${vax.id}`} className="cursor-pointer">
+                                        Mark as complete
+                                     </Label>
+                                 </div>
                                </AccordionContent>
                              </AccordionItem>
                            ))}
@@ -207,5 +211,7 @@ export default function HealthTrackerView() {
     </div>
   );
 }
+
+    
 
     
