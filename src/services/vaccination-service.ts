@@ -99,15 +99,27 @@ export async function updateVaccinationStatus(userId: string, vaccineId: string,
 
     try {
         const docSnap = await getDoc(statusDocRef);
+        
         const data: UserVaccinationStatus = {
             userId,
             vaccineId,
             status,
-            imageUrl: imageUrl !== undefined ? imageUrl : (docSnap.exists() ? docSnap.data().imageUrl : undefined),
         };
 
+        let finalImageUrl: string | undefined = imageUrl;
+
+        // If a new image isn't provided, and the doc exists, keep the old one.
+        if (imageUrl === undefined && docSnap.exists()) {
+            finalImageUrl = docSnap.data().imageUrl;
+        }
+
+        if (finalImageUrl) {
+            data.imageUrl = finalImageUrl;
+        }
+        
+        // If marking as pending, always remove the image URL.
         if (status === 0 && data.imageUrl) {
-            delete data.imageUrl; // Remove image if marking as pending
+            delete data.imageUrl;
         }
 
         await setDoc(statusDocRef, data, { merge: true });
