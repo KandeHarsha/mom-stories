@@ -2,7 +2,6 @@
 // src/services/user-service.ts
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import type { Vaccination } from './vaccination-service';
 
 export interface UserProfile {
     id: string;
@@ -11,7 +10,6 @@ export interface UserProfile {
     phase: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
     updatedAt: any;
     createdAt: any;
-    vaccinations?: Vaccination[];
     // From LoginRadius
     Uid: string;
     FirstName: string;

@@ -32,7 +32,7 @@ import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
-import type { Vaccination } from '@/services/vaccination-service';
+import type { MergedVaccination } from '@/services/vaccination-service';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -80,13 +80,13 @@ const momChartConfig = {
 }
 
 export default function HealthTrackerView() {
-  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
+  const [vaccinations, setVaccinations] = useState<MergedVaccination[]>([]);
   const [isLoading, startLoadingTransition] = useTransition();
   const [isUpdating, startUpdateTransition] = useTransition();
   const { toast } = useToast();
   
   const [isConfirming, setIsConfirming] = useState(false);
-  const [selectedVax, setSelectedVax] = useState<Vaccination | null>(null);
+  const [selectedVax, setSelectedVax] = useState<MergedVaccination | null>(null);
   const [vaxImageFile, setVaxImageFile] = useState<File | null>(null);
   const [vaxImagePreview, setVaxImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,13 +125,13 @@ export default function HealthTrackerView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
-  const handleVaxStatusChange = (vax: Vaccination, checked: boolean) => {
+  const handleVaxStatusChange = (vax: MergedVaccination, checked: boolean) => {
     if (checked) {
       setSelectedVax(vax);
       setIsConfirming(true);
     } else {
       // If unchecking, update immediately without a photo
-      updateStatus(vax.id, false);
+      updateStatus(vax.id, 0);
     }
   };
 
@@ -167,10 +167,10 @@ export default function HealthTrackerView() {
 
   const handleConfirmUpdate = () => {
     if (!selectedVax) return;
-    updateStatus(selectedVax.id, true, vaxImageFile);
+    updateStatus(selectedVax.id, 1, vaxImageFile);
   };
   
-  const updateStatus = (id: string, status: boolean, imageFile: File | null = null) => {
+  const updateStatus = (id: string, status: 0 | 1, imageFile: File | null = null) => {
     startUpdateTransition(async () => {
         const formData = new FormData();
         formData.append('status', String(status));
@@ -274,7 +274,7 @@ export default function HealthTrackerView() {
                                        <div className="font-semibold">{vax.name}</div>
                                        <div className="text-sm text-muted-foreground">{`Recommended Age: ${vax.age} (Dose: ${vax.dose})`}</div>
                                    </div>
-                                   <Badge variant={vax.status ? 'default' : 'secondary'} className={cn("mr-4", vax.status ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status ? 'Complete' : 'Pending'}</Badge>
+                                   <Badge variant={vax.status === 1 ? 'default' : 'secondary'} className={cn("mr-4", vax.status === 1 ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status === 1 ? 'Complete' : 'Pending'}</Badge>
                                  </div>
                                </AccordionTrigger>
                                <AccordionContent>
@@ -288,13 +288,13 @@ export default function HealthTrackerView() {
                                  <div className="flex items-center space-x-2">
                                      <Checkbox
                                        id={`vax-check-${vax.id}`}
-                                       checked={vax.status}
+                                       checked={vax.status === 1}
                                        onCheckedChange={(checked) => handleVaxStatusChange(vax, checked as boolean)}
-                                       aria-label={`Mark ${vax.name} as ${vax.status ? 'incomplete' : 'complete'}`}
+                                       aria-label={`Mark ${vax.name} as ${vax.status === 1 ? 'incomplete' : 'complete'}`}
                                        disabled={isUpdating}
                                      />
                                      <Label htmlFor={`vax-check-${vax.id}`} className="cursor-pointer">
-                                        {vax.status ? 'Mark as incomplete' : 'Mark as complete'}
+                                        {vax.status === 1 ? 'Mark as incomplete' : 'Mark as complete'}
                                      </Label>
                                      {isUpdating && selectedVax?.id === vax.id && <Loader2 className="h-4 w-4 animate-spin" />}
                                  </div>
@@ -410,4 +410,3 @@ export default function HealthTrackerView() {
     </div>
   );
 }
-

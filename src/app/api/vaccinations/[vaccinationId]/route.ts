@@ -23,8 +23,10 @@ export async function PUT(request: Request, { params }: { params: { vaccinationI
         }
         
         const formData = await request.formData();
-        const status = formData.get('status') === 'true';
+        const statusValue = formData.get('status');
         const imageFile = formData.get('image') as File | null;
+        
+        const status = statusValue === '1' ? 1 : 0;
         
         let imageUrl: string | undefined = undefined;
 
