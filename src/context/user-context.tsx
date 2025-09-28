@@ -85,10 +85,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     setUser(syncUserObject(newUserState));
   }, []);
 
-  const login = async (loginResponse: { access_token: string, Profile?: UserProfile }) => {
+  const login = async (loginResponse: { access_token: string }) => {
+    const { access_token } = loginResponse;
+    
     try {
-        const { access_token } = loginResponse;
-        
         // 1. Store token for client-side API calls
         localStorage.setItem('session_token', access_token);
 
@@ -98,10 +98,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         });
 
         if (!profileRes.ok) {
-            throw new Error('Failed to fetch user profile after login.');
+            const errorData = await profileRes.json();
+            throw new Error(errorData.details || 'Failed to fetch user profile after login.');
         }
-        const profile: UserProfile = await profileRes.json();
         
+        const profile: UserProfile = await profileRes.json();
         localStorage.setItem('uid', profile.Uid);
 
         // 3. Call server to set the HTTP-only session cookie for middleware
@@ -111,14 +112,14 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
             body: JSON.stringify({ token: access_token }),
         });
 
-        const sessionData = await sessionResponse.json();
         if (!sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
             throw new Error(sessionData.error || 'Failed to create server session.');
         }
 
         // 4. Update the user state in the context
         setUser(syncUserObject(profile));
-        return {};
+        return {}; // Return success
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         // Clean up on failure
