@@ -29,8 +29,9 @@ export default function LoginView() {
       LRObject.init('auth', {
         container: 'auth-container',
         isForgotpassword: false,
-        onSuccess: async function (response: { access_token: string, Profile: UserProfile }) { 
+        onSuccess: async function (response: { access_token: string, Profile?: UserProfile }) { 
           try {
+            // The context `login` function is now robust enough to handle all cases
             const result = await login(response);
             if (result.error) {
               throw new Error(result.error);
