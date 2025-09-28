@@ -29,12 +29,13 @@ export default function LoginView() {
       LRObject.init('auth', {
         container: 'auth-container',
         isForgotpassword: false,
-        onSuccess: async function (response: { access_token: string, Profile: UserProfile }) { 
+        onSuccess: async function (response: { access_token: string, Profile?: UserProfile }) { 
           try {
             const result = await login(response);
             if (result.error) {
               throw new Error(result.error);
             }
+            
             toast({
               title: 'Login Successful',
               description: "Welcome back!",

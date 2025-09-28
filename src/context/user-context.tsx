@@ -12,7 +12,7 @@ interface UserContextType {
   user: UserProfile | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (loginResponse: { access_token: string, Profile: UserProfile }) => Promise<{ error?: string }>;
+  login: (loginResponse: { access_token: string, Profile?: UserProfile }) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   updateUser: (user: UserProfile | null) => void;
 }
@@ -48,29 +48,35 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const checkUserSession = async () => {
+      setIsLoading(true);
       const token = localStorage.getItem('session_token');
-      if (token) {
-        try {
-          const res = await fetch('/api/profile', {
-            headers: {
-              'Authorization': `Bearer ${token}`
+      try {
+        if (token) {
+            const res = await fetch('/api/profile', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (res.ok) {
+              const profile: UserProfile = await res.json();
+              setUser(syncUserObject(profile));
+            } else {
+              // Token is invalid or expired, clear it
+              localStorage.removeItem('session_token');
+              localStorage.removeItem('uid');
+              setUser(null);
             }
-          });
-          if (res.ok) {
-            const profile: UserProfile = await res.json();
-            setUser(syncUserObject(profile));
-          } else {
-            // Token is invalid or expired, clear it
-            localStorage.removeItem('session_token');
-            localStorage.removeItem('uid');
+        } else {
             setUser(null);
-          }
-        } catch (error) {
-          console.error("Session check failed", error);
-          setUser(null);
         }
+      } catch (error) {
+        console.error("Session check failed", error);
+        localStorage.removeItem('session_token');
+        localStorage.removeItem('uid');
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     checkUserSession();
   }, []);
@@ -79,27 +85,41 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     setUser(syncUserObject(newUserState));
   }, []);
 
-  const login = async (loginResponse: { access_token: string, Profile: UserProfile }) => {
+  const login = async (loginResponse: { access_token: string }) => {
+    const { access_token } = loginResponse;
+    
     try {
-        // 1. Store token and UID in local storage for client-side API calls
-        localStorage.setItem('session_token', loginResponse.access_token);
-        localStorage.setItem('uid', loginResponse.Profile.Uid);
+        // 1. Store token for client-side API calls
+        localStorage.setItem('session_token', access_token);
 
-        // 2. Call server to set the HTTP-only session cookie for middleware
+        // 2. Fetch profile to get UID and latest data, this works for both social and regular login
+        const profileRes = await fetch('/api/profile', {
+            headers: { 'Authorization': `Bearer ${access_token}` }
+        });
+
+        if (!profileRes.ok) {
+            const errorData = await profileRes.json();
+            throw new Error(errorData.details || 'Failed to fetch user profile after login.');
+        }
+        
+        const profile: UserProfile = await profileRes.json();
+        localStorage.setItem('uid', profile.Uid);
+
+        // 3. Call server to set the HTTP-only session cookie for middleware
         const sessionResponse = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: loginResponse.access_token }),
+            body: JSON.stringify({ token: access_token }),
         });
 
-        const sessionData = await sessionResponse.json();
         if (!sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
             throw new Error(sessionData.error || 'Failed to create server session.');
         }
 
-        // 3. Update the user state in the context
-        setUser(syncUserObject(loginResponse.Profile));
-        return {};
+        // 4. Update the user state in the context
+        setUser(syncUserObject(profile));
+        return {}; // Return success
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         // Clean up on failure
@@ -107,7 +127,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('uid');
         return { error: errorMessage };
     }
-};
+  };
 
 
   const logout = async () => {
@@ -127,32 +147,50 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const isAuthRoute = authRoutes.includes(pathname);
 
   useEffect(() => {
-    if (isLoading) return; // Don't redirect until session check is complete
+    if (isLoading) return; 
 
-    // If user is not logged in and not on an auth route, redirect to login
     if (!isLoggedIn && !isAuthRoute) {
       router.push('/login');
     }
 
-    // If user is logged in and on an auth route, redirect to dashboard
     if (isLoggedIn && isAuthRoute) {
       router.push('/dashboard');
     }
   }, [isLoggedIn, isAuthRoute, router, isLoading]);
 
 
-  if (isLoading || (!isLoggedIn && !isAuthRoute) || (isLoggedIn && isAuthRoute)) {
+  if (isLoading && !isAuthRoute) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
+
+  // If we are on an auth route, always render children.
+  // The useEffect above will handle redirection if the user is already logged in.
+  if (isAuthRoute) {
+    return (
+      <UserContext.Provider value={{ user, isLoggedIn, isLoading, login, logout, updateUser }}>
+        {children}
+      </UserContext.Provider>
+    );
+  }
+
+  // If logged in and not on an auth route, render the app layout
+  if (isLoggedIn) {
+      return (
+        <UserContext.Provider value={{ user, isLoggedIn, isLoading, login, logout, updateUser }}>
+          <AppLayout>{children}</AppLayout>
+        </UserContext.Provider>
+    );
+  }
   
+  // This fallback will be shown briefly for non-auth routes while the redirect to /login happens.
   return (
-    <UserContext.Provider value={{ user, isLoggedIn, isLoading, login, logout, updateUser }}>
-       {isLoggedIn ? <AppLayout>{children}</AppLayout> : children}
-    </UserContext.Provider>
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
   );
 };
 
