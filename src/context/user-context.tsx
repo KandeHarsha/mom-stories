@@ -49,7 +49,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkUserSession = async () => {
       const token = localStorage.getItem('session_token');
-      setIsLoading(true);
       try {
         if (token) {
             const res = await fetch('/api/profile', {
@@ -66,6 +65,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
               localStorage.removeItem('uid');
               setUser(null);
             }
+        } else {
+            setUser(null);
         }
       } catch (error) {
         console.error("Session check failed", error);
