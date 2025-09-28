@@ -49,28 +49,32 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkUserSession = async () => {
       const token = localStorage.getItem('session_token');
-      if (token) {
-        try {
-          const res = await fetch('/api/profile', {
-            headers: {
-              'Authorization': `Bearer ${token}`
+      setIsLoading(true);
+      try {
+        if (token) {
+            const res = await fetch('/api/profile', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (res.ok) {
+              const profile: UserProfile = await res.json();
+              setUser(syncUserObject(profile));
+            } else {
+              // Token is invalid or expired, clear it
+              localStorage.removeItem('session_token');
+              localStorage.removeItem('uid');
+              setUser(null);
             }
-          });
-          if (res.ok) {
-            const profile: UserProfile = await res.json();
-            setUser(syncUserObject(profile));
-          } else {
-            // Token is invalid or expired, clear it
-            localStorage.removeItem('session_token');
-            localStorage.removeItem('uid');
-            setUser(null);
-          }
-        } catch (error) {
-          console.error("Session check failed", error);
-          setUser(null);
         }
+      } catch (error) {
+        console.error("Session check failed", error);
+        localStorage.removeItem('session_token');
+        localStorage.removeItem('uid');
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     checkUserSession();
   }, []);

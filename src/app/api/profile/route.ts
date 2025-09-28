@@ -23,12 +23,14 @@ export async function GET(request: Request) {
     console.error('Get Profile API Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     // Clear cookie on client if token is invalid
-    return new NextResponse(JSON.stringify({ error: 'Failed to fetch user profile.', details: errorMessage }), { 
+    const response = new NextResponse(JSON.stringify({ error: 'Failed to fetch user profile.', details: errorMessage }), { 
         status: 401,
-        headers: {
-            'Set-Cookie': 'session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-        }
     });
+    response.cookies.set('session', '', {
+        path: '/',
+        expires: new Date(0),
+    });
+    return response;
   }
 }
 
@@ -48,4 +50,3 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }
-
