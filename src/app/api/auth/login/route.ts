@@ -1,39 +1,47 @@
 // src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { z } from 'zod';
+import { loginUser, loginSchema } from '@/services/auth-service';
 
-// This endpoint is now primarily for setting the session cookie after a successful client-side login.
-const loginSessionSchema = z.object({
-  token: z.string().min(1, 'Access token is required.'),
-});
+// Server-side login endpoint: accept email & password, call LoginRadius via loginUser,
+// then store an HttpOnly session cookie containing the access token.
 
 export async function POST(request: Request) {
+  let body: any;
   try {
-    const body = await request.json();
-    const validatedData = loginSessionSchema.safeParse(body);
+    body = await request.json();
+  } catch (err) {
+    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+  }
 
-    if (!validatedData.success) {
-      return NextResponse.json({ error: validatedData.error.flatten().fieldErrors }, { status: 400 });
+  const parsed = loginSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 });
+  }
+
+  try {
+    const lrResponse = await loginUser(parsed.data);
+
+    // Try several common fields where the access token may be returned
+    const accessToken = lrResponse?.access_token || lrResponse?.accessToken || lrResponse?.token || lrResponse?.data?.access_token;
+
+    if (!accessToken) {
+      // Return the raw response for debugging in non-production environments
+      return NextResponse.json({ error: 'Login succeeded but no access token returned.', raw: lrResponse }, { status: 502 });
     }
 
-    // The access token is received from the client after LoginRadius onSuccess
-    const { token } = validatedData.data;
-
-    // Set a session cookie for middleware to read
-    (await
-      // Set a session cookie for middleware to read
-      cookies()).set('session', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 7, // One week
-        path: '/',
+    const res = NextResponse.json({ data: lrResponse });
+    res.cookies.set('session', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    return NextResponse.json({ success: true, message: 'Session created successfully.'}, { status: 200 });
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return res;
+  } catch (error: any) {
+    const message = error?.message || 'Login failed.';
+    // If the auth-service returned a descriptive message, forward it and use 401
+    return NextResponse.json({ error: message }, { status: 401 });
   }
 }
