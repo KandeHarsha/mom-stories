@@ -9,13 +9,6 @@ export async function GET(request: Request) {
         if (!token) {
             return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
         }
-        
-        // const validationResponse = await validateAccessToken(token);
-        // console.log("validationResponse:", validationResponse);
-        // Check if the token is expired
-        // if (!validationResponse.expires_in || new Date(validationResponse.expires_in) < new Date()) {
-        //     return new NextResponse(JSON.stringify({ error: 'Token expired' }), { status: 401 });
-        // }
 
         const userProfileResponse  = await getUserProfile(token);
         const entries = await getJournalEntries(userProfileResponse.Uid);
@@ -71,7 +64,7 @@ export async function POST(request: Request) {
         
         const newEntryId = await addJournalEntry(dataToSave);
 
-        return new NextResponse(JSON.stringify({ success: true, id: newEntryId }), { status: 201 });
+        return new NextResponse(JSON.stringify({ success: true, id: newEntryId, title, content, voiceNoteUrl: dataToSave.voiceNoteUrl || null, imageUrl: dataToSave.imageUrl || null }), { status: 201 });
 
     } catch (error) {
         console.error('Create Journal Entry Error:', error);
