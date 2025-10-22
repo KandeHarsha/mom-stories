@@ -58,3 +58,51 @@ export const WHO_LENGTH_RANGES_BOYS_0_TO_24_MONTHS = [
     { month: 23, minCM: 81.0, maxCM: 92.9 },
     { month: 24, minCM: 81.7, maxCM: 93.9 },
 ];
+
+
+/**
+ * World Health Organization (WHO) Child Growth Standards.
+ * This data represents the length-for-age percentiles for boys from 2 to 5 years.
+ * The range is approximately between the 3rd and 97th percentile.
+ *
+ * Source: WHO Anthro Survey Analyser, length-for-age for boys.
+ */
+export const WHO_LENGTH_RANGES_BOYS_2_TO_5_YEARS = [
+    { month: 24, minCM: 81.0, maxCM: 93.2 },
+    { month: 25, minCM: 81.7, maxCM: 94.2 },
+    { month: 26, minCM: 82.5, maxCM: 95.2 },
+    { month: 27, minCM: 83.1, maxCM: 96.1 },
+    { month: 28, minCM: 83.8, maxCM: 97.0 },
+    { month: 29, minCM: 84.5, maxCM: 97.9 },
+    { month: 30, minCM: 85.1, maxCM: 98.7 },
+    { month: 31, minCM: 85.7, maxCM: 99.6 },
+    { month: 32, minCM: 86.4, maxCM: 100.4 },
+    { month: 33, minCM: 86.9, maxCM: 101.2 },
+    { month: 34, minCM: 87.5, maxCM: 102.0 },
+    { month: 35, minCM: 88.1, maxCM: 102.7 },
+    { month: 36, minCM: 88.7, maxCM: 103.5 },
+    { month: 37, minCM: 89.2, maxCM: 104.2 },
+    { month: 38, minCM: 89.8, maxCM: 105.0 },
+    { month: 39, minCM: 90.3, maxCM: 105.7 },
+    { month: 40, minCM: 90.9, maxCM: 106.4 },
+    { month: 41, minCM: 91.4, maxCM: 107.1 },
+    { month: 42, minCM: 91.9, maxCM: 107.8 },
+    { month: 43, minCM: 92.4, maxCM: 108.5 },
+    { month: 44, minCM: 93.0, maxCM: 109.1 },
+    { month: 45, minCM: 93.5, maxCM: 109.8 },
+    { month: 46, minCM: 94.0, maxCM: 110.4 },
+    { month: 47, minCM: 94.4, maxCM: 111.1 },
+    { month: 48, minCM: 94.9, maxCM: 111.7 },
+    { month: 49, minCM: 95.4, maxCM: 112.4 },
+    { month: 50, minCM: 95.9, maxCM: 113.0 },
+    { month: 51, minCM: 96.4, maxCM: 113.6 },
+    { month: 52, minCM: 96.9, maxCM: 114.2 },
+    { month: 53, minCM: 97.4, maxCM: 114.9 },
+    { month: 54, minCM: 97.8, maxCM: 115.5 },
+    { month: 55, minCM: 98.3, maxCM: 116.1 },
+    { month: 56, minCM: 98.8, maxCM: 116.7 },
+    { month: 57, minCM: 99.3, maxCM: 117.4 },
+    { month: 58, minCM: 99.7, maxCM: 118.0 },
+    { month: 59, minCM: 100.2, maxCM: 118.6 },
+    { month: 60, minCM: 100.7, maxCM: 119.2 },
+];
