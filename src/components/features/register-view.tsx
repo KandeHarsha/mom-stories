@@ -53,7 +53,7 @@ export default function RegisterView() {
 
         toast({
           title: 'Registration Successful',
-          description: "Welcome! You can now log in.",
+          description: "Please check your inbox to continue",
         });
         
         router.push('/login');
