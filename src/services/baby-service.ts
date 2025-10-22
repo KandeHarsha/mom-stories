@@ -1,6 +1,6 @@
 // src/services/baby-service.ts
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp, collection, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { updateUserProfile } from './user-service';
 
 export interface BabyProfile {
@@ -65,14 +65,14 @@ export async function getBabyProfile(babyId: string): Promise<BabyProfile | null
                 gender: data.gender,
                 birthday: (data.birthday as Timestamp)?.toDate().toISOString(),
                 createdAt: (data.createdAt as Timestamp)?.toDate().toISOString(),
-                height: data.height.map((h: { value: number, date: Timestamp }) => ({
+                height: data.height.map((h: { value: number, date: Timestamp | Date }) => ({
                     value: h.value,
-                    date: h.date.toDate().toISOString(),
-                })),
-                weight: data.weight.map((w: { value: number, date: Timestamp }) => ({
+                    date: h.date instanceof Timestamp ? h.date.toDate().toISOString() : new Date(h.date).toISOString(),
+                })).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+                weight: data.weight.map((w: { value: number, date: Timestamp | Date }) => ({
                     value: w.value,
-                    date: w.date.toDate().toISOString(),
-                })),
+                    date: w.date instanceof Timestamp ? w.date.toDate().toISOString() : new Date(w.date).toISOString(),
+                })).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
             };
             return profileData;
         } else {
@@ -82,5 +82,32 @@ export async function getBabyProfile(babyId: string): Promise<BabyProfile | null
     } catch (e) {
         console.error("Error getting baby profile: ", e);
         throw new Error('Could not fetch baby profile.');
+    }
+}
+
+export async function addMeasurement(babyId: string, measurement: { weight?: number; height?: number; date: Date }): Promise<void> {
+    if (!babyId) throw new Error('Baby ID is required.');
+
+    const docRef = doc(db, 'babies', babyId);
+
+    const dataToUpdate: any = {};
+    const measurementDate = Timestamp.fromDate(measurement.date);
+
+    if (measurement.weight) {
+        dataToUpdate.weight = arrayUnion({ value: measurement.weight, date: measurementDate });
+    }
+    if (measurement.height) {
+        dataToUpdate.height = arrayUnion({ value: measurement.height, date: measurementDate });
+    }
+    
+    if (Object.keys(dataToUpdate).length === 0) {
+        throw new Error('No new measurement data provided.');
+    }
+
+    try {
+        await updateDoc(docRef, dataToUpdate);
+    } catch (e) {
+        console.error("Error adding measurement: ", e);
+        throw new Error('Could not add measurement.');
     }
 }

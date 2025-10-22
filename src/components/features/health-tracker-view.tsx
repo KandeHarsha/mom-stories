@@ -7,12 +7,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Baby, Smile, Loader2, ImagePlus, X, Paperclip, View } from 'lucide-react';
+import { Baby, Smile, Loader2, ImagePlus, X, Paperclip, View, PlusCircle } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -106,6 +107,12 @@ export default function HealthTrackerView() {
   const [babyHeight, setBabyHeight] = useState('');
   const [babyGender, setBabyGender] = useState<'Male' | 'Female' | 'Other'>();
 
+  const [isMeasurementFormOpen, setIsMeasurementFormOpen] = useState(false);
+  const [isSavingMeasurement, startSavingMeasurementTransition] = useTransition();
+  const [newWeight, setNewWeight] = useState('');
+  const [newHeight, setNewHeight] = useState('');
+  const [measurementDate, setMeasurementDate] = useState<Date>(new Date());
+
 
   const getAuthHeaders = (isJson = true) => {
     const token = localStorage.getItem('session_token');
@@ -174,7 +181,6 @@ export default function HealthTrackerView() {
           gender: babyGender,
         });
 
-        // Update user context and refetch baby profile
         if (user) {
           const updatedUser = { ...user, babyId: newBabyId };
           updateUser(updatedUser);
@@ -196,16 +202,59 @@ export default function HealthTrackerView() {
     });
   };
 
-  const babyGrowthData = babyProfile
-  ? [
-      ...babyProfile.weight.map((w, i) => ({
-        date: new Date(w.date).toLocaleDateString(),
-        weight: w.value,
-        length: babyProfile.height[i]?.value || null,
-      })),
-    ]
-  : [];
+  const handleMeasurementSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!babyProfile || (!newWeight && !newHeight)) {
+      toast({ variant: 'destructive', title: 'Please enter at least one measurement.' });
+      return;
+    }
+    
+    startSavingMeasurementTransition(async () => {
+      try {
+        const response = await fetch(`/api/babies/${babyProfile.id}/measurements`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            weight: newWeight,
+            height: newHeight,
+            date: measurementDate.toISOString(),
+          })
+        });
 
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.details || 'Failed to add measurement');
+        }
+
+        const { profile: updatedProfile } = await response.json();
+        setBabyProfile(updatedProfile);
+        
+        toast({ title: 'Measurement Saved!' });
+        setIsMeasurementFormOpen(false);
+        setNewWeight('');
+        setNewHeight('');
+        setMeasurementDate(new Date());
+
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error saving measurement',
+          description: (error as Error).message,
+        });
+      }
+    });
+  }
+
+  const babyGrowthData = babyProfile
+    ? babyProfile.weight.map((w, i) => {
+        const matchingHeight = babyProfile.height.find(h => new Date(h.date).toDateString() === new Date(w.date).toDateString());
+        return {
+          date: format(new Date(w.date), 'MMM d, yyyy'),
+          weight: w.value,
+          length: matchingHeight ? matchingHeight.value : null,
+        }
+      })
+    : [];
 
   const handleVaxStatusChange = (vax: MergedVaccination, checked: boolean) => {
     if (checked) {
@@ -333,6 +382,14 @@ export default function HealthTrackerView() {
                         </ChartContainer>
                       )}
                     </CardContent>
+                    <CardFooter>
+                       {babyProfile && (
+                           <Button onClick={() => setIsMeasurementFormOpen(true)}>
+                               <PlusCircle className="mr-2 h-4 w-4" />
+                               Add Measurement
+                           </Button>
+                       )}
+                    </CardFooter>
                 </Card>
             </TabsContent>
             <TabsContent value="vaccinations" className="mt-6">
@@ -565,6 +622,55 @@ export default function HealthTrackerView() {
                          <Button type="submit" disabled={isSavingBaby}>
                             {isSavingBaby && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Create Profile
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={isMeasurementFormOpen} onOpenChange={setIsMeasurementFormOpen}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Add New Measurement</DialogTitle>
+                    <DialogDescription>
+                        Record {babyProfile?.name}'s weight and/or height for today.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleMeasurementSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Date</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn("w-full justify-start text-left font-normal", !measurementDate && "text-muted-foreground")}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {measurementDate ? format(measurementDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar mode="single" selected={measurementDate} onSelect={(d) => setMeasurementDate(d || new Date())} initialFocus />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-weight">Weight (kg)</Label>
+                            <Input id="new-weight" type="number" step="0.01" value={newWeight} onChange={(e) => setNewWeight(e.target.value)} placeholder="e.g. 4.1" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new-height">Height (cm)</Label>
+                            <Input id="new-height" type="number" step="0.1" value={newHeight} onChange={(e) => setNewHeight(e.target.value)} placeholder="e.g. 53.5" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                         <DialogClose asChild>
+                            <Button type="button" variant="secondary">Cancel</Button>
+                         </DialogClose>
+                         <Button type="submit" disabled={isSavingMeasurement}>
+                            {isSavingMeasurement && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Measurement
                         </Button>
                     </DialogFooter>
                 </form>
