@@ -6,14 +6,8 @@ import { cookies } from 'next/headers';
 export async function POST(request: Request) {
   try {
     // Clear the session cookie
-    (await
-      // Clear the session cookie
-      cookies()).set('session', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: -1, // Expire the cookie immediately
-        path: '/',
-    });
+    const cookieStore = await cookies();
+    cookieStore.delete('session');
 
     return NextResponse.json({ success: true, message: 'Logout successful.' }, { status: 200 });
 

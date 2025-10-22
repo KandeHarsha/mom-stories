@@ -1,6 +1,4 @@
 // src/services/auth-service.ts
-import { auth } from '@/lib/firebase';
-import { signOut } from "firebase/auth";
 import { z } from 'zod';
 import axios from 'axios';
 
@@ -186,10 +184,7 @@ export async function verifyEmail(vtoken: string): Promise<any> {
 
 
 export async function logoutUser() {
-    try {
-        await signOut(auth);
-    } catch (error) {
-        console.error("Error signing out:", error);
-        throw new Error('Logout failed.');
-    }
+    // Logout is handled by clearing the session cookie on the server
+    // No Firebase auth sign out needed since we're using LoginRadius
+    return Promise.resolve();
 }
