@@ -47,11 +47,12 @@ import {
 } from "@/components/ui/popover"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 
 const babyChartConfig = {
-  weight: { label: 'Weight (lbs)', color: 'hsl(var(--primary))' },
-  length: { label: 'Length (in)', color: 'hsl(var(--accent-foreground))' },
+  weight: { label: 'Weight (kg)', color: 'hsl(var(--primary))' },
+  length: { label: 'Height (cm)', color: 'hsl(var(--accent-foreground))' },
 };
 
 const momSleepData = [
@@ -103,6 +104,8 @@ export default function HealthTrackerView() {
   const [babyBirthday, setBabyBirthday] = useState<Date>();
   const [babyWeight, setBabyWeight] = useState('');
   const [babyHeight, setBabyHeight] = useState('');
+  const [babyGender, setBabyGender] = useState<'Male' | 'Female' | 'Other'>();
+
 
   const getAuthHeaders = (isJson = true) => {
     const token = localStorage.getItem('session_token');
@@ -149,7 +152,7 @@ export default function HealthTrackerView() {
 
   const handleBabyProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !babyName || !babyBirthday || !babyWeight || !babyHeight) {
+    if (!user || !babyName || !babyBirthday || !babyWeight || !babyHeight || !babyGender) {
       toast({ variant: 'destructive', title: 'Please fill out all fields.' });
       return;
     }
@@ -160,8 +163,9 @@ export default function HealthTrackerView() {
           name: babyName,
           birthday: babyBirthday,
           parentId: user.Uid,
-          initialWeight: parseFloat(babyWeight),
-          initialHeight: parseFloat(babyHeight),
+          birthWeight: parseFloat(babyWeight),
+          birthHeight: parseFloat(babyHeight),
+          gender: babyGender,
         });
 
         // Update user context and refetch baby profile
@@ -301,7 +305,7 @@ export default function HealthTrackerView() {
                 <Card>
                     <CardHeader>
                         <CardTitle>{babyProfile ? `${babyProfile.name}'s Growth` : "Baby's Growth Milestones"}</CardTitle>
-                        <CardDescription>Visualizing weight and length over time.</CardDescription>
+                        <CardDescription>Visualizing weight and height over time.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {isBabyProfileLoading ? <Skeleton className="h-[400px] w-full" /> : (
@@ -314,8 +318,8 @@ export default function HealthTrackerView() {
                                     <YAxis yAxisId="right" orientation="right" stroke={babyChartConfig.length.color} />
                                     <ChartTooltip content={<ChartTooltipContent />} />
                                     <Legend />
-                                    <Bar dataKey="weight" name="Weight (lbs)" fill={babyChartConfig.weight.color} radius={4} yAxisId="left" />
-                                    <Bar dataKey="length" name="Length (in)" fill={babyChartConfig.length.color} radius={4} yAxisId="right" />
+                                    <Bar dataKey="weight" name="Weight (kg)" fill={babyChartConfig.weight.color} radius={4} yAxisId="left" />
+                                    <Bar dataKey="length" name="Height (cm)" fill={babyChartConfig.length.color} radius={4} yAxisId="right" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -518,14 +522,35 @@ export default function HealthTrackerView() {
                             </PopoverContent>
                         </Popover>
                     </div>
+                    <div className="space-y-2">
+                        <Label>Gender</Label>
+                        <RadioGroup 
+                            required 
+                            className="flex items-center gap-4" 
+                            onValueChange={(value: 'Male' | 'Female' | 'Other') => setBabyGender(value)}
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Male" id="male" />
+                                <Label htmlFor="male">Male</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Female" id="female" />
+                                <Label htmlFor="female">Female</Label>
+                            </div>
+                             <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="Other" id="other" />
+                                <Label htmlFor="other">Other</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="baby-weight">Initial Weight (lbs)</Label>
-                            <Input id="baby-weight" type="number" value={babyWeight} onChange={(e) => setBabyWeight(e.target.value)} placeholder="e.g. 7.5" required />
+                            <Label htmlFor="baby-weight">Weight at Birth (kg)</Label>
+                            <Input id="baby-weight" type="number" value={babyWeight} onChange={(e) => setBabyWeight(e.target.value)} placeholder="e.g. 3.4" required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="baby-height">Initial Height (in)</Label>
-                            <Input id="baby-height" type="number" value={babyHeight} onChange={(e) => setBabyHeight(e.target.value)} placeholder="e.g. 20" required />
+                            <Label htmlFor="baby-height">Height at Birth (cm)</Label>
+                            <Input id="baby-height" type="number" value={babyHeight} onChange={(e) => setBabyHeight(e.target.value)} placeholder="e.g. 50" required />
                         </div>
                     </div>
                     <DialogFooter>
@@ -541,3 +566,4 @@ export default function HealthTrackerView() {
   );
 }
 
+    

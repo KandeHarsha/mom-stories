@@ -1,3 +1,4 @@
+
 // src/services/baby-service.ts
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp, collection, addDoc } from 'firebase/firestore';
@@ -8,6 +9,7 @@ export interface BabyProfile {
     parentId: string;
     name: string;
     birthday: any; // Can be Timestamp on read, Date on write
+    gender: 'Male' | 'Female' | 'Other';
     height: { value: number; date: any }[];
     weight: { value: number; date: any }[];
     createdAt: any;
@@ -17,8 +19,9 @@ interface CreateBabyProfileInput {
     parentId: string;
     name: string;
     birthday: Date;
-    initialHeight: number;
-    initialWeight: number;
+    birthHeight: number;
+    birthWeight: number;
+    gender: 'Male' | 'Female' | 'Other';
 }
 
 export async function createBabyProfile(input: CreateBabyProfileInput): Promise<string> {
@@ -29,8 +32,9 @@ export async function createBabyProfile(input: CreateBabyProfileInput): Promise<
             parentId: input.parentId,
             name: input.name,
             birthday: Timestamp.fromDate(input.birthday),
-            height: [{ value: input.initialHeight, date: Timestamp.fromDate(creationDate) }],
-            weight: [{ value: input.initialWeight, date: Timestamp.fromDate(creationDate) }],
+            gender: input.gender,
+            height: [{ value: input.birthHeight, date: creationDate }],
+            weight: [{ value: input.birthWeight, date: creationDate }],
             createdAt: serverTimestamp(),
         });
 
@@ -59,6 +63,7 @@ export async function getBabyProfile(babyId: string): Promise<BabyProfile | null
                 id: docSnap.id,
                 parentId: data.parentId,
                 name: data.name,
+                gender: data.gender,
                 birthday: (data.birthday as Timestamp)?.toDate().toISOString(),
                 createdAt: (data.createdAt as Timestamp)?.toDate().toISOString(),
                 height: data.height.map((h: { value: number, date: Timestamp }) => ({
@@ -80,3 +85,5 @@ export async function getBabyProfile(babyId: string): Promise<BabyProfile | null
         throw new Error('Could not fetch baby profile.');
     }
 }
+
+    
