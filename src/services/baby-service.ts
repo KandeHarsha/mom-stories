@@ -23,15 +23,15 @@ interface CreateBabyProfileInput {
 
 export async function createBabyProfile(input: CreateBabyProfileInput): Promise<string> {
     try {
-        const creationDate = serverTimestamp();
+        const creationDate = new Date();
         
         const babyDocRef = await addDoc(collection(db, 'babies'), {
             parentId: input.parentId,
             name: input.name,
             birthday: Timestamp.fromDate(input.birthday),
-            height: [{ value: input.initialHeight, date: creationDate }],
-            weight: [{ value: input.initialWeight, date: creationDate }],
-            createdAt: creationDate,
+            height: [{ value: input.initialHeight, date: Timestamp.fromDate(creationDate) }],
+            weight: [{ value: input.initialWeight, date: Timestamp.fromDate(creationDate) }],
+            createdAt: serverTimestamp(),
         });
 
         // Link this new baby ID to the user's profile
