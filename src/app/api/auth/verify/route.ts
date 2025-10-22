@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
 import { verifyEmail } from '@/services/auth-service';
-import { db } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { createUserProfile } from '@/services/user-service';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const vtype = searchParams.get('vtype');
     const vtoken = searchParams.get('vtoken');
 
+    const loginUrl = new URL('/login', request.url);
+
     if (vtype !== "emailverification" || !vtoken) {
-        return NextResponse.json(
-            { error: "Invalid or missing verification parameters." },
-            { status: 400 }
-        );
+        loginUrl.searchParams.set('error', 'Invalid verification link.');
+        return NextResponse.redirect(loginUrl);
     }
 
     try {
@@ -23,9 +22,7 @@ export async function GET(request: Request) {
         
         if (profile && profile.Uid) {
             // Add user to Firebase userProfiles collection
-            const userDocRef = doc(db, 'userProfiles', profile.Uid);
-            
-            await setDoc(userDocRef, {
+            await createUserProfile(profile.Uid, {
                 Uid: profile.Uid,
                 Id: profile.ID,
                 FirstName: profile.FirstName || '',
@@ -36,13 +33,17 @@ export async function GET(request: Request) {
                 Email: profile.Email || [],
                 Identities: profile.Identities || null,
                 phase: profile.Company || '',
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            }, { merge: true }); // Use merge to avoid overwriting if user already exists
+            });
+            loginUrl.searchParams.set('verified', 'true');
+            return NextResponse.redirect(loginUrl);
         }
         
-        return NextResponse.json({ success: true, data: result }, { status: 200 });
+        loginUrl.searchParams.set('error', 'Verification successful, but could not create profile.');
+        return NextResponse.redirect(loginUrl);
+        
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        console.error("Verification API Error:", error);
+        loginUrl.searchParams.set('error', error.message || 'Email verification failed.');
+        return NextResponse.redirect(loginUrl);
     }
 }

@@ -1,7 +1,8 @@
 // src/components/features/login-view.tsx
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,12 +17,33 @@ import { Label } from "@/components/ui/label";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle } from 'lucide-react';
 
 export default function LoginView() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error,
+      });
+    }
+
+    const verified = searchParams.get('verified');
+    if (verified) {
+      setShowVerificationMessage(true);
+    }
+  }, [searchParams, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +96,15 @@ export default function LoginView() {
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="grid gap-4">
+             {showVerificationMessage && (
+                <Alert variant="default" className="border-green-500 bg-green-50 text-green-800">
+                    <CheckCircle className="h-4 w-4 !text-green-600" />
+                    <AlertTitle>Email Verified!</AlertTitle>
+                    <AlertDescription>
+                        Your email has been successfully verified. You can now log in.
+                    </AlertDescription>
+                </Alert>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

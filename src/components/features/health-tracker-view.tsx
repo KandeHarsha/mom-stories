@@ -37,17 +37,17 @@ import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import Image from 'next/image';
+import { useUser } from '@/context/user-context';
+import { type BabyProfile, createBabyProfile, getBabyProfile } from '@/services/baby-service';
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar as CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
 
-
-const growthData = [
-  { month: 'Birth', weight: 7.5, length: 20 },
-  { month: '1m', weight: 9.9, length: 21.5 },
-  { month: '2m', weight: 12.4, length: 23 },
-  { month: '4m', weight: 15.5, length: 25 },
-  { month: '6m', weight: 17.5, length: 26.5 },
-  { month: '9m', weight: 20, length: 28 },
-  { month: '12m', weight: 22, length: 29.5 },
-];
 
 const babyChartConfig = {
   weight: { label: 'Weight (lbs)', color: 'hsl(var(--primary))' },
@@ -80,6 +80,7 @@ const momChartConfig = {
 }
 
 export default function HealthTrackerView() {
+  const { user, updateUser } = useUser();
   const [vaccinations, setVaccinations] = useState<MergedVaccination[]>([]);
   const [isLoading, startLoadingTransition] = useTransition();
   const [isUpdating, startUpdateTransition] = useTransition();
@@ -92,7 +93,16 @@ export default function HealthTrackerView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
+  
+  const [babyProfile, setBabyProfile] = useState<BabyProfile | null>(null);
+  const [isBabyProfileLoading, startBabyProfileLoading] = useTransition();
+  const [isBabyFormOpen, setIsBabyFormOpen] = useState(false);
+  const [isSavingBaby, startSavingBabyTransition] = useTransition();
 
+  const [babyName, setBabyName] = useState('');
+  const [babyBirthday, setBabyBirthday] = useState<Date>();
+  const [babyWeight, setBabyWeight] = useState('');
+  const [babyHeight, setBabyHeight] = useState('');
 
   const getAuthHeaders = (isJson = true) => {
     const token = localStorage.getItem('session_token');
@@ -104,6 +114,18 @@ export default function HealthTrackerView() {
   };
 
   useEffect(() => {
+    if (!user) return;
+    
+    startBabyProfileLoading(async () => {
+      if (user.babyId) {
+        const profile = await getBabyProfile(user.babyId);
+        setBabyProfile(profile);
+      } else {
+        // No babyId, so we need to prompt the user to create one
+        setIsBabyFormOpen(true);
+      }
+    });
+
     startLoadingTransition(async () => {
       try {
         const response = await fetch('/api/vaccinations', {
@@ -123,7 +145,55 @@ export default function HealthTrackerView() {
       }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast]);
+  }, [user, toast]);
+
+  const handleBabyProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !babyName || !babyBirthday || !babyWeight || !babyHeight) {
+      toast({ variant: 'destructive', title: 'Please fill out all fields.' });
+      return;
+    }
+
+    startSavingBabyTransition(async () => {
+      try {
+        const newBabyId = await createBabyProfile({
+          name: babyName,
+          birthday: babyBirthday,
+          parentId: user.Uid,
+          initialWeight: parseFloat(babyWeight),
+          initialHeight: parseFloat(babyHeight),
+        });
+
+        // Update user context and refetch baby profile
+        const updatedUser = { ...user, babyId: newBabyId };
+        updateUser(updatedUser);
+        
+        const profile = await getBabyProfile(newBabyId);
+        setBabyProfile(profile);
+        
+        setIsBabyFormOpen(false);
+        toast({ title: 'Baby Profile Created!', description: `${babyName}'s profile is ready.` });
+
+      } catch (error) {
+         toast({
+          variant: 'destructive',
+          title: 'Error creating profile',
+          description: (error as Error).message,
+        });
+      }
+    });
+  };
+
+  const babyGrowthData = babyProfile
+  ? [
+      ...babyProfile.weight.map((w, i) => ({
+        date: new Date(w.date).toLocaleDateString(),
+        weight: w.value,
+        length: babyProfile.height[i]?.value || null,
+      })),
+    ]
+  : [];
+
 
   const handleVaxStatusChange = (vax: MergedVaccination, checked: boolean) => {
     if (checked) {
@@ -230,15 +300,16 @@ export default function HealthTrackerView() {
             <TabsContent value="growth" className="mt-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Baby's Growth Milestones</CardTitle>
-                        <CardDescription>Visualizing weight and length over the first year.</CardDescription>
+                        <CardTitle>{babyProfile ? `${babyProfile.name}'s Growth` : "Baby's Growth Milestones"}</CardTitle>
+                        <CardDescription>Visualizing weight and length over time.</CardDescription>
                     </CardHeader>
                     <CardContent>
+                      {isBabyProfileLoading ? <Skeleton className="h-[400px] w-full" /> : (
                         <ChartContainer config={babyChartConfig} className="h-[400px] w-full">
                             <ResponsiveContainer>
-                                <BarChart data={growthData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                <BarChart data={babyGrowthData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
                                     <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
                                     <YAxis yAxisId="left" orientation="left" stroke={babyChartConfig.weight.color} />
                                     <YAxis yAxisId="right" orientation="right" stroke={babyChartConfig.length.color} />
                                     <ChartTooltip content={<ChartTooltipContent />} />
@@ -248,6 +319,7 @@ export default function HealthTrackerView() {
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
+                      )}
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -407,6 +479,65 @@ export default function HealthTrackerView() {
                 </div>
             </DialogContent>
         </Dialog>
+
+        <Dialog open={isBabyFormOpen} onOpenChange={setIsBabyFormOpen}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Create Baby's Profile</DialogTitle>
+                    <DialogDescription>
+                        Let's get your baby's growth tracking started. This can be updated later.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleBabyProfileSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="baby-name">Baby's Name</Label>
+                        <Input id="baby-name" value={babyName} onChange={(e) => setBabyName(e.target.value)} placeholder="e.g. Leo" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="baby-birthday">Birthday</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !babyBirthday && "text-muted-foreground"
+                                    )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {babyBirthday ? format(babyBirthday, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={babyBirthday}
+                                onSelect={setBabyBirthday}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="baby-weight">Initial Weight (lbs)</Label>
+                            <Input id="baby-weight" type="number" value={babyWeight} onChange={(e) => setBabyWeight(e.target.value)} placeholder="e.g. 7.5" required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="baby-height">Initial Height (in)</Label>
+                            <Input id="baby-height" type="number" value={babyHeight} onChange={(e) => setBabyHeight(e.target.value)} placeholder="e.g. 20" required />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                         <Button type="submit" disabled={isSavingBaby}>
+                            {isSavingBaby && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Create Profile
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
+
