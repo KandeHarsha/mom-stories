@@ -86,7 +86,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     }
 }
 
-export async function updateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id'>>) {
+export async function updateUserProfile(userId: string, data: Partial<Omit<UserProfile, 'id' | 'Uid' | 'Email'>>) {
     try {
         const docRef = doc(db, 'userProfiles', userId);
         await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });

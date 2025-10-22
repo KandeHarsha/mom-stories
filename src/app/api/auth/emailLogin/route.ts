@@ -38,7 +38,8 @@ export async function POST(request: Request) {
       try {
         const firebaseProfile = await getUserProfile(uid);
         if (firebaseProfile) {
-          lrResponse.Profile = firebaseProfile;
+          // Avoid mutating lrResponse; create a new object with updated Profile
+          lrResponse = { ...lrResponse, Profile: firebaseProfile };
         }
       } catch (error) {
         console.error('Failed to fetch Firebase profile:', error);

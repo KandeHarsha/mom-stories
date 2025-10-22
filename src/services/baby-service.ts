@@ -32,8 +32,8 @@ export async function createBabyProfile(input: CreateBabyProfileInput): Promise<
             name: input.name,
             birthday: Timestamp.fromDate(input.birthday),
             gender: input.gender,
-            height: [{ value: input.birthHeight, date: creationDate }],
-            weight: [{ value: input.birthWeight, date: creationDate }],
+            height: [{ value: input.birthHeight, date: Timestamp.fromDate(creationDate) }],
+            weight: [{ value: input.birthWeight, date: Timestamp.fromDate(creationDate) }],
             createdAt: serverTimestamp(),
         });
 
