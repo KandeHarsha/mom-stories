@@ -15,6 +15,7 @@ export interface UserProfile {
     FirstName: string;
     Email: { Type: string, Value: string }[];
     Company: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
+    babyId?: string;
 }
 
 // src/services/profile-service.ts
@@ -33,15 +34,14 @@ export async function updateProfileApi(data: { name: string; phase: string; user
 }
 
 
-export async function createUserProfile(userId: string, data: { name: string, email: string }) {
+export async function createUserProfile(userId: string, data: Partial<UserProfile>) {
      try {
         const docRef = doc(db, 'userProfiles', userId);
         await setDoc(docRef, {
             ...data,
-            phase: '', // Default phase
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-        });
+        }, { merge: true });
     } catch (e) {
         console.error("Error creating user profile: ", e);
         throw new Error('Could not create user profile.');
@@ -95,3 +95,4 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
         throw new Error('Could not update user profile.');
     }
 }
+

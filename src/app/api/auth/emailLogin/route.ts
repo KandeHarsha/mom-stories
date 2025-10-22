@@ -1,6 +1,7 @@
 // src/app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import { loginUser, loginSchema } from '@/services/auth-service';
+import { getUserProfile } from '@/services/user-service';
 
 // Server-side login endpoint: accept email & password, call LoginRadius via loginUser,
 // then store an HttpOnly session cookie containing the access token.
@@ -27,6 +28,23 @@ export async function POST(request: Request) {
     if (!accessToken) {
       // Return the raw response for debugging in non-production environments
       return NextResponse.json({ error: 'Login succeeded but no access token returned.', raw: lrResponse }, { status: 502 });
+    }
+
+    // Get the Uid from LoginRadius response
+    const uid = lrResponse?.Profile?.Uid;
+
+    // Fetch user profile from Firebase and replace the LoginRadius profile
+    if (uid) {
+      try {
+        const firebaseProfile = await getUserProfile(uid);
+        if (firebaseProfile) {
+          // Avoid mutating lrResponse; create a new object with updated Profile
+          lrResponse = { ...lrResponse, Profile: firebaseProfile };
+        }
+      } catch (error) {
+        console.error('Failed to fetch Firebase profile:', error);
+        // Continue with LoginRadius profile if Firebase fetch fails
+      }
     }
 
     const res = NextResponse.json({ data: lrResponse });
