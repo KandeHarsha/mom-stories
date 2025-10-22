@@ -255,14 +255,22 @@ export default function HealthTrackerView() {
   }
 
   const babyGrowthData = babyProfile
-    ? babyProfile.weight.map((w, i) => {
-        const matchingHeight = babyProfile.height.find(h => new Date(h.date).toDateString() === new Date(w.date).toDateString());
-        return {
-          date: format(new Date(w.date), 'MMM d, yyyy'),
-          weight: w.value,
-          length: matchingHeight ? matchingHeight.value : null,
-        }
-      })
+    ? (() => {
+        // Preprocess height entries into a map keyed by toDateString
+        const heightByDateString = new Map<string, { date: string, value: number }>();
+        babyProfile.height.forEach(h => {
+          heightByDateString.set(new Date(h.date).toDateString(), h);
+        });
+        return babyProfile.weight.map((w, i) => {
+          const wDateString = new Date(w.date).toDateString();
+          const matchingHeight = heightByDateString.get(wDateString);
+          return {
+            date: format(new Date(w.date), 'MMM d, yyyy'),
+            weight: w.value,
+            length: matchingHeight ? matchingHeight.value : null,
+          }
+        });
+      })()
     : [];
 
   const handleVaxStatusChange = (vax: MergedVaccination, checked: boolean) => {
