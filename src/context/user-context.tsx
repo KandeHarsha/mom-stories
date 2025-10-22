@@ -52,7 +52,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem('session_token');
       try {
         if (token) {
-            const res = await fetch('/api/profile', {
+            const res = await fetch('/api/user', {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
@@ -93,7 +93,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('session_token', access_token);
 
         // 2. Fetch profile to get UID and latest data, this works for both social and regular login
-        const profileRes = await fetch('/api/profile', {
+        const profileRes = await fetch('/api/user', {
             headers: { 'Authorization': `Bearer ${access_token}` }
         });
 
