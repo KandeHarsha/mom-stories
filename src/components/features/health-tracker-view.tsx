@@ -49,6 +49,7 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Switch } from '../ui/switch';
 
 
 const babyChartConfig = {
@@ -111,7 +112,8 @@ export default function HealthTrackerView() {
   const [isSavingMeasurement, startSavingMeasurementTransition] = useTransition();
   const [newWeight, setNewWeight] = useState('');
   const [newHeight, setNewHeight] = useState('');
-  const [measurementDate, setMeasurementDate] = useState<Date>(new Date());
+  const [measurementDate, setMeasurementDate] = useState<Date | undefined>(new Date());
+  const [useBirthdayDate, setUseBirthdayDate] = useState(false);
 
 
   const getAuthHeaders = (isJson = true) => {
@@ -208,6 +210,12 @@ export default function HealthTrackerView() {
       toast({ variant: 'destructive', title: 'Please enter at least one measurement.' });
       return;
     }
+
+    const dateToSend = useBirthdayDate ? new Date(babyProfile.birthday) : measurementDate;
+    if (!dateToSend) {
+      toast({ variant: 'destructive', title: 'Please select a date.' });
+      return;
+    }
     
     startSavingMeasurementTransition(async () => {
       try {
@@ -217,7 +225,7 @@ export default function HealthTrackerView() {
           body: JSON.stringify({
             weight: newWeight,
             height: newHeight,
-            date: measurementDate.toISOString(),
+            date: dateToSend.toISOString(),
           })
         });
 
@@ -234,6 +242,7 @@ export default function HealthTrackerView() {
         setNewWeight('');
         setNewHeight('');
         setMeasurementDate(new Date());
+        setUseBirthdayDate(false);
 
       } catch (error) {
         toast({
@@ -340,6 +349,14 @@ export default function HealthTrackerView() {
         }
     });
   }
+
+  useEffect(() => {
+    if (useBirthdayDate && babyProfile) {
+      setMeasurementDate(new Date(babyProfile.birthday));
+    } else {
+      setMeasurementDate(new Date());
+    }
+  }, [useBirthdayDate, babyProfile]);
 
   return (
     <div className="space-y-6">
@@ -628,15 +645,27 @@ export default function HealthTrackerView() {
             </DialogContent>
         </Dialog>
 
-        <Dialog open={isMeasurementFormOpen} onOpenChange={setIsMeasurementFormOpen}>
+        <Dialog open={isMeasurementFormOpen} onOpenChange={
+          (isOpen) => {
+            setIsMeasurementFormOpen(isOpen);
+            if (!isOpen) {
+              setUseBirthdayDate(false); // Reset on close
+            }
+          }
+        }>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Add New Measurement</DialogTitle>
                     <DialogDescription>
-                        Record {babyProfile?.name}'s weight and/or height for today.
+                        Record {babyProfile?.name}'s weight and/or height.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleMeasurementSubmit} className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <Switch id="birthday-switch" checked={useBirthdayDate} onCheckedChange={setUseBirthdayDate} />
+                        <Label htmlFor="birthday-switch">Use birthday for date</Label>
+                    </div>
+
                     <div className="space-y-2">
                         <Label>Date</Label>
                         <Popover>
@@ -644,13 +673,14 @@ export default function HealthTrackerView() {
                                 <Button
                                     variant={"outline"}
                                     className={cn("w-full justify-start text-left font-normal", !measurementDate && "text-muted-foreground")}
+                                    disabled={useBirthdayDate}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {measurementDate ? format(measurementDate, "PPP") : <span>Pick a date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={measurementDate} onSelect={(d) => setMeasurementDate(d || new Date())} initialFocus />
+                                <Calendar mode="single" selected={measurementDate} onSelect={setMeasurementDate} initialFocus />
                             </PopoverContent>
                         </Popover>
                     </div>
@@ -679,3 +709,5 @@ export default function HealthTrackerView() {
     </div>
   );
 }
+
+    
