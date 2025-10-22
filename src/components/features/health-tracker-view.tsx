@@ -121,8 +121,14 @@ export default function HealthTrackerView() {
     
     startBabyProfileLoading(async () => {
       if (user.babyId) {
-        const profile = await getBabyProfile(user.babyId);
-        setBabyProfile(profile);
+        try {
+          const profile = await getBabyProfile(user.babyId);
+          setBabyProfile(profile);
+          setIsBabyFormOpen(false);
+        } catch (error) {
+          toast({ variant: 'destructive', title: 'Error fetching baby profile', description: (error as Error).message });
+          setIsBabyFormOpen(true);
+        }
       } else {
         // No babyId, so we need to prompt the user to create one
         setIsBabyFormOpen(true);
@@ -169,8 +175,10 @@ export default function HealthTrackerView() {
         });
 
         // Update user context and refetch baby profile
-        const updatedUser = { ...user, babyId: newBabyId };
-        updateUser(updatedUser);
+        if (user) {
+          const updatedUser = { ...user, babyId: newBabyId };
+          updateUser(updatedUser);
+        }
         
         const profile = await getBabyProfile(newBabyId);
         setBabyProfile(profile);
@@ -565,5 +573,3 @@ export default function HealthTrackerView() {
     </div>
   );
 }
-
-    

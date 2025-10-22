@@ -1,4 +1,3 @@
-
 // src/services/baby-service.ts
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp, collection, addDoc } from 'firebase/firestore';
@@ -85,5 +84,3 @@ export async function getBabyProfile(babyId: string): Promise<BabyProfile | null
         throw new Error('Could not fetch baby profile.');
     }
 }
-
-    
