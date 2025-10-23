@@ -15,7 +15,7 @@ export interface UserProfile {
     FirstName: string;
     Email: { Type: string, Value: string }[];
     Company: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
-    babyId?: string;
+    childId?: string;
 }
 
 // src/services/profile-service.ts

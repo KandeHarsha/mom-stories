@@ -57,7 +57,7 @@ export default function DashboardView() {
                 <Textarea
                   id="question"
                   name="question"
-                  placeholder="e.g., How can I handle sleep deprivation? What are some good ways to bond with my baby?"
+                  placeholder="e.g., How can I handle sleep deprivation? What are some good ways to bond with my child?"
                   required
                   rows={5}
                 />
@@ -91,7 +91,7 @@ export default function DashboardView() {
           />
            <FeatureCard
             title="Health Tracker"
-            description="Track milestones for you and baby."
+            description="Track milestones for you and your child."
             onClick={() => router.push('/health')}
             buttonText="View"
             buttonIcon={Baby}
