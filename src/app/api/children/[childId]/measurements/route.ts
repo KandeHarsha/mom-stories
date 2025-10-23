@@ -1,11 +1,11 @@
-// src/app/api/babies/[babyId]/measurements/route.ts
+// src/app/api/children/[childId]/measurements/route.ts
 import { NextResponse } from 'next/server';
-import { addMeasurement } from '@/services/baby-service';
+import { addMeasurement } from '@/services/child-service';
 import { getUserProfile } from '@/services/auth-service';
-import { getBabyProfile } from '@/services/baby-service';
+import { getChildProfile } from '@/services/child-service';
 
 // Add a new measurement
-export async function POST(request: Request, { params }: { params: { babyId: string } }) {
+export async function POST(request: Request, { params }: { params: { childId: string } }) {
     try {
         const token = request.headers.get('Authorization')?.split(' ')[1];
         if (!token) {
@@ -17,14 +17,14 @@ export async function POST(request: Request, { params }: { params: { babyId: str
             return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
         }
 
-        const babyId = params.babyId;
-        if (!babyId) {
-            return new NextResponse(JSON.stringify({ error: 'Baby ID is required.' }), { status: 400 });
+        const childId = params.childId;
+        if (!childId) {
+            return new NextResponse(JSON.stringify({ error: 'Child ID is required.' }), { status: 400 });
         }
         
-        // Security check: ensure the user is the parent of the baby
-        const babyProfile = await getBabyProfile(babyId);
-        if (babyProfile?.parentId !== userProfileResponse.Uid) {
+        // Security check: ensure the user is the parent of the child
+        const childProfile = await getChildProfile(childId);
+        if (childProfile?.parentId !== userProfileResponse.Uid) {
             return new NextResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
         }
 
@@ -45,9 +45,9 @@ export async function POST(request: Request, { params }: { params: { babyId: str
             date: new Date(date),
         };
 
-        await addMeasurement(babyId, newMeasurement);
+        await addMeasurement(childId, newMeasurement);
         
-        const updatedProfile = await getBabyProfile(babyId);
+        const updatedProfile = await getChildProfile(childId);
 
         return new NextResponse(JSON.stringify({ success: true, profile: updatedProfile }), { status: 200 });
 

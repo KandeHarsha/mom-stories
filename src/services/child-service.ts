@@ -1,9 +1,9 @@
-// src/services/baby-service.ts
+// src/services/child-service.ts
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp, collection, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { updateUserProfile } from './user-service';
 
-export interface BabyProfile {
+export interface ChildProfile {
     id: string;
     parentId: string;
     name: string;
@@ -14,7 +14,7 @@ export interface BabyProfile {
     createdAt: any;
 }
 
-interface CreateBabyProfileInput {
+interface CreateChildProfileInput {
     parentId: string;
     name: string;
     birthday: Date;
@@ -23,11 +23,11 @@ interface CreateBabyProfileInput {
     gender: 'Male' | 'Female' | 'Other';
 }
 
-export async function createBabyProfile(input: CreateBabyProfileInput): Promise<string> {
+export async function createChildProfile(input: CreateChildProfileInput): Promise<string> {
     try {
         const creationDate = new Date();
         
-        const babyDocRef = await addDoc(collection(db, 'babies'), {
+        const childDocRef = await addDoc(collection(db, 'children'), {
             parentId: input.parentId,
             name: input.name,
             birthday: Timestamp.fromDate(input.birthday),
@@ -37,28 +37,28 @@ export async function createBabyProfile(input: CreateBabyProfileInput): Promise<
             createdAt: serverTimestamp(),
         });
 
-        // Link this new baby ID to the user's profile
-        await updateUserProfile(input.parentId, { babyId: babyDocRef.id });
+        // Link this new child ID to the user's profile
+        await updateUserProfile(input.parentId, { childId: childDocRef.id });
 
-        return babyDocRef.id;
+        return childDocRef.id;
     } catch (e) {
-        console.error("Error creating baby profile: ", e);
-        throw new Error('Could not create baby profile.');
+        console.error("Error creating child profile: ", e);
+        throw new Error('Could not create child profile.');
     }
 }
 
 
-export async function getBabyProfile(babyId: string): Promise<BabyProfile | null> {
-    if (!babyId) return null;
+export async function getChildProfile(childId: string): Promise<ChildProfile | null> {
+    if (!childId) return null;
     
     try {
-        const docRef = doc(db, 'babies', babyId);
+        const docRef = doc(db, 'children', childId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
             const data = docSnap.data();
             // Convert Timestamps to a serializable format (ISO string)
-            const profileData: BabyProfile = {
+            const profileData: ChildProfile = {
                 id: docSnap.id,
                 parentId: data.parentId,
                 name: data.name,
@@ -68,27 +68,27 @@ export async function getBabyProfile(babyId: string): Promise<BabyProfile | null
                 height: data.height.map((h: { value: number, date: Timestamp | Date }) => ({
                     value: h.value,
                     date: h.date instanceof Timestamp ? h.date.toDate().toISOString() : new Date(h.date).toISOString(),
-                })).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+                })).sort((a: { value: number, date: string }, b: { value: number, date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime()),
                 weight: data.weight.map((w: { value: number, date: Timestamp | Date }) => ({
                     value: w.value,
                     date: w.date instanceof Timestamp ? w.date.toDate().toISOString() : new Date(w.date).toISOString(),
-                })).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+                })).sort((a: { value: number, date: string }, b: { value: number, date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime()),
             };
             return profileData;
         } else {
-            console.warn(`No baby profile found for ID ${babyId}.`);
+            console.warn(`No child profile found for ID ${childId}.`);
             return null;
         }
     } catch (e) {
-        console.error("Error getting baby profile: ", e);
-        throw new Error('Could not fetch baby profile.');
+        console.error("Error getting child profile: ", e);
+        throw new Error('Could not fetch child profile.');
     }
 }
 
-export async function addMeasurement(babyId: string, measurement: { weight?: number; height?: number; date: Date }): Promise<void> {
-    if (!babyId) throw new Error('Baby ID is required.');
+export async function addMeasurement(childId: string, measurement: { weight?: number; height?: number; date: Date }): Promise<void> {
+    if (!childId) throw new Error('Child ID is required.');
 
-    const docRef = doc(db, 'babies', babyId);
+    const docRef = doc(db, 'children', childId);
 
     const dataToUpdate: any = {};
     const measurementDate = Timestamp.fromDate(measurement.date);

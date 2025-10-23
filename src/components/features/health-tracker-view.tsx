@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Baby, Smile, Loader2, ImagePlus, X, Paperclip, View, PlusCircle } from 'lucide-react';
+import { Baby, Loader2, ImagePlus, X, Paperclip, View, PlusCircle } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -39,7 +39,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import Image from 'next/image';
 import { useUser } from '@/context/user-context';
-import { type BabyProfile, createBabyProfile, getBabyProfile } from '@/services/baby-service';
+import { type ChildProfile, createChildProfile, getChildProfile } from '@/services/child-service';
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -52,7 +52,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
 
 
-const babyChartConfig = {
+const childChartConfig = {
   weight: { label: 'Weight (kg)', color: 'hsl(var(--primary))' },
   length: { label: 'Height (cm)', color: 'hsl(var(--accent-foreground))' },
 };
@@ -97,16 +97,16 @@ export default function HealthTrackerView() {
 
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
   
-  const [babyProfile, setBabyProfile] = useState<BabyProfile | null>(null);
-  const [isBabyProfileLoading, startBabyProfileLoading] = useTransition();
-  const [isBabyFormOpen, setIsBabyFormOpen] = useState(false);
-  const [isSavingBaby, startSavingBabyTransition] = useTransition();
+  const [childProfile, setChildProfile] = useState<ChildProfile | null>(null);
+  const [isChildProfileLoading, startChildProfileLoading] = useTransition();
+  const [isChildFormOpen, setIsChildFormOpen] = useState(false);
+  const [isSavingChild, startSavingChildTransition] = useTransition();
 
-  const [babyName, setBabyName] = useState('');
-  const [babyBirthday, setBabyBirthday] = useState<Date>();
-  const [babyWeight, setBabyWeight] = useState('');
-  const [babyHeight, setBabyHeight] = useState('');
-  const [babyGender, setBabyGender] = useState<'Male' | 'Female' | 'Other'>();
+  const [childName, setChildName] = useState('');
+  const [childBirthday, setChildBirthday] = useState<Date>();
+  const [childWeight, setChildWeight] = useState('');
+  const [childHeight, setChildHeight] = useState('');
+  const [childGender, setChildGender] = useState<'Male' | 'Female' | 'Other'>();
 
   const [isMeasurementFormOpen, setIsMeasurementFormOpen] = useState(false);
   const [isSavingMeasurement, startSavingMeasurementTransition] = useTransition();
@@ -128,19 +128,19 @@ export default function HealthTrackerView() {
   useEffect(() => {
     if (!user) return;
     
-    startBabyProfileLoading(async () => {
-      if (user.babyId) {
+    startChildProfileLoading(async () => {
+      if (user.childId) {
         try {
-          const profile = await getBabyProfile(user.babyId);
-          setBabyProfile(profile);
-          setIsBabyFormOpen(false);
+          const profile = await getChildProfile(user.childId);
+          setChildProfile(profile);
+          setIsChildFormOpen(false);
         } catch (error) {
-          toast({ variant: 'destructive', title: 'Error fetching baby profile', description: (error as Error).message });
-          setIsBabyFormOpen(true);
+          toast({ variant: 'destructive', title: 'Error fetching child profile', description: (error as Error).message });
+          setIsChildFormOpen(true);
         }
       } else {
-        // No babyId, so we need to prompt the user to create one
-        setIsBabyFormOpen(true);
+        // No childId, so we need to prompt the user to create one
+        setIsChildFormOpen(true);
       }
     });
 
@@ -165,34 +165,34 @@ export default function HealthTrackerView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, toast]);
 
-  const handleBabyProfileSubmit = async (e: React.FormEvent) => {
+  const handleChildProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !babyName || !babyBirthday || !babyWeight || !babyHeight || !babyGender) {
+    if (!user || !childName || !childBirthday || !childWeight || !childHeight || !childGender) {
       toast({ variant: 'destructive', title: 'Please fill out all fields.' });
       return;
     }
 
-    startSavingBabyTransition(async () => {
+    startSavingChildTransition(async () => {
       try {
-        const newBabyId = await createBabyProfile({
-          name: babyName,
-          birthday: babyBirthday,
+        const newChildId = await createChildProfile({
+          name: childName,
+          birthday: childBirthday,
           parentId: user.Uid,
-          birthWeight: parseFloat(babyWeight),
-          birthHeight: parseFloat(babyHeight),
-          gender: babyGender,
+          birthWeight: parseFloat(childWeight),
+          birthHeight: parseFloat(childHeight),
+          gender: childGender,
         });
 
         if (user) {
-          const updatedUser = { ...user, babyId: newBabyId };
+          const updatedUser = { ...user, childId: newChildId };
           updateUser(updatedUser);
         }
         
-        const profile = await getBabyProfile(newBabyId);
-        setBabyProfile(profile);
+        const profile = await getChildProfile(newChildId);
+        setChildProfile(profile);
         
-        setIsBabyFormOpen(false);
-        toast({ title: 'Baby Profile Created!', description: `${babyName}'s profile is ready.` });
+        setIsChildFormOpen(false);
+        toast({ title: 'Child Profile Created!', description: `${childName}'s profile is ready.` });
 
       } catch (error) {
          toast({
@@ -206,12 +206,12 @@ export default function HealthTrackerView() {
 
   const handleMeasurementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!babyProfile || (!newWeight && !newHeight)) {
+    if (!childProfile || (!newWeight && !newHeight)) {
       toast({ variant: 'destructive', title: 'Please enter at least one measurement.' });
       return;
     }
 
-    const dateToSend = useBirthdayDate ? new Date(babyProfile.birthday) : measurementDate;
+    const dateToSend = useBirthdayDate ? new Date(childProfile.birthday) : measurementDate;
     if (!dateToSend) {
       toast({ variant: 'destructive', title: 'Please select a date.' });
       return;
@@ -219,7 +219,7 @@ export default function HealthTrackerView() {
     
     startSavingMeasurementTransition(async () => {
       try {
-        const response = await fetch(`/api/babies/${babyProfile.id}/measurements`, {
+        const response = await fetch(`/api/children/${childProfile.id}/measurements`, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
@@ -235,7 +235,7 @@ export default function HealthTrackerView() {
         }
 
         const { profile: updatedProfile } = await response.json();
-        setBabyProfile(updatedProfile);
+        setChildProfile(updatedProfile);
         
         toast({ title: 'Measurement Saved!' });
         setIsMeasurementFormOpen(false);
@@ -254,14 +254,14 @@ export default function HealthTrackerView() {
     });
   }
 
-  const babyGrowthData = babyProfile
+  const childGrowthData = childProfile
     ? (() => {
         // Preprocess height entries into a map keyed by toDateString
         const heightByDateString = new Map<string, { date: string, value: number }>();
-        babyProfile.height.forEach(h => {
+        childProfile.height.forEach(h => {
           heightByDateString.set(new Date(h.date).toDateString(), h);
         });
-        return babyProfile.weight.map((w, i) => {
+        return childProfile.weight.map(w => {
           const wDateString = new Date(w.date).toDateString();
           const matchingHeight = heightByDateString.get(wDateString);
           return {
@@ -359,12 +359,12 @@ export default function HealthTrackerView() {
   }
 
   useEffect(() => {
-    if (useBirthdayDate && babyProfile) {
-      setMeasurementDate(new Date(babyProfile.birthday));
+    if (useBirthdayDate && childProfile) {
+      setMeasurementDate(new Date(childProfile.birthday));
     } else {
       setMeasurementDate(new Date());
     }
-  }, [useBirthdayDate, babyProfile]);
+  }, [useBirthdayDate, childProfile]);
 
   return (
     <div className="space-y-6">
@@ -374,41 +374,41 @@ export default function HealthTrackerView() {
                 Growth & Health Tools
             </h2>
             <p className="text-muted-foreground mt-1">
-                Keep track of important milestones and health data for you and your baby.
+                Keep track of important milestones and health data for you and your child.
             </p>
         </div>
         <Tabs defaultValue="growth" className="w-full">
             <TabsList className="grid w-full grid-cols-3 max-w-lg">
-                <TabsTrigger value="growth">Baby Growth</TabsTrigger>
-                <TabsTrigger value="vaccinations">Baby Vaccinations</TabsTrigger>
+                <TabsTrigger value="growth">Child Growth</TabsTrigger>
+                <TabsTrigger value="vaccinations">Child Vaccinations</TabsTrigger>
                 <TabsTrigger value="mom">Mom's Wellness</TabsTrigger>
             </TabsList>
             <TabsContent value="growth" className="mt-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>{babyProfile ? `${babyProfile.name}'s Growth` : "Baby's Growth Milestones"}</CardTitle>
+                        <CardTitle>{childProfile ? `${childProfile.name}'s Growth` : "Child's Growth Milestones"}</CardTitle>
                         <CardDescription>Visualizing weight and height over time.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {isBabyProfileLoading ? <Skeleton className="h-[400px] w-full" /> : (
-                        <ChartContainer config={babyChartConfig} className="h-[400px] w-full">
+                      {isChildProfileLoading ? <Skeleton className="h-[400px] w-full" /> : (
+                        <ChartContainer config={childChartConfig} className="h-[400px] w-full">
                             <ResponsiveContainer>
-                                <BarChart data={babyGrowthData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                <BarChart data={childGrowthData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
                                     <CartesianGrid vertical={false} />
                                     <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
-                                    <YAxis yAxisId="left" orientation="left" stroke={babyChartConfig.weight.color} />
-                                    <YAxis yAxisId="right" orientation="right" stroke={babyChartConfig.length.color} />
+                                    <YAxis yAxisId="left" orientation="left" stroke={childChartConfig.weight.color} />
+                                    <YAxis yAxisId="right" orientation="right" stroke={childChartConfig.length.color} />
                                     <ChartTooltip content={<ChartTooltipContent />} />
                                     <Legend />
-                                    <Bar dataKey="weight" name="Weight (kg)" fill={babyChartConfig.weight.color} radius={4} yAxisId="left" />
-                                    <Bar dataKey="length" name="Height (cm)" fill={babyChartConfig.length.color} radius={4} yAxisId="right" />
+                                    <Bar dataKey="weight" name="Weight (kg)" fill={childChartConfig.weight.color} radius={4} yAxisId="left" />
+                                    <Bar dataKey="length" name="Height (cm)" fill={childChartConfig.length.color} radius={4} yAxisId="right" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
                       )}
                     </CardContent>
                     <CardFooter>
-                       {babyProfile && (
+                       {childProfile && (
                            <Button onClick={() => setIsMeasurementFormOpen(true)}>
                                <PlusCircle className="mr-2 h-4 w-4" />
                                Add Measurement
@@ -421,7 +421,7 @@ export default function HealthTrackerView() {
                 <Card>
                     <CardHeader>
                          <CardTitle>Vaccination Schedule</CardTitle>
-                         <CardDescription>A simplified tracker for your baby's immunizations. Always consult your pediatrician for official schedules.</CardDescription>
+                         <CardDescription>A simplified tracker for your child's immunizations. Always consult your pediatrician for official schedules.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {isLoading ? (
@@ -574,39 +574,39 @@ export default function HealthTrackerView() {
             </DialogContent>
         </Dialog>
 
-        <Dialog open={isBabyFormOpen} onOpenChange={setIsBabyFormOpen}>
+        <Dialog open={isChildFormOpen} onOpenChange={setIsChildFormOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Create Baby's Profile</DialogTitle>
+                    <DialogTitle>Create Child's Profile</DialogTitle>
                     <DialogDescription>
-                        Let's get your baby's growth tracking started. This can be updated later.
+                        Let's get your child's growth tracking started. This can be updated later.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleBabyProfileSubmit} className="space-y-4">
+                <form onSubmit={handleChildProfileSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="baby-name">Baby's Name</Label>
-                        <Input id="baby-name" value={babyName} onChange={(e) => setBabyName(e.target.value)} placeholder="e.g. Leo" required />
+                        <Label htmlFor="child-name">Child's Name</Label>
+                        <Input id="child-name" value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="e.g. Leo" required />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="baby-birthday">Birthday</Label>
+                        <Label htmlFor="child-birthday">Birthday</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant={"outline"}
                                     className={cn(
                                         "w-full justify-start text-left font-normal",
-                                        !babyBirthday && "text-muted-foreground"
+                                        !childBirthday && "text-muted-foreground"
                                     )}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {babyBirthday ? format(babyBirthday, "PPP") : <span>Pick a date</span>}
+                                {childBirthday ? format(childBirthday, "PPP") : <span>Pick a date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
                                 <Calendar
                                 mode="single"
-                                selected={babyBirthday}
-                                onSelect={setBabyBirthday}
+                                selected={childBirthday}
+                                onSelect={setChildBirthday}
                                 initialFocus
                                 />
                             </PopoverContent>
@@ -617,7 +617,7 @@ export default function HealthTrackerView() {
                         <RadioGroup 
                             required 
                             className="flex items-center gap-4" 
-                            onValueChange={(value: 'Male' | 'Female' | 'Other') => setBabyGender(value)}
+                            onValueChange={(value: 'Male' | 'Female' | 'Other') => setChildGender(value)}
                         >
                             <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="Male" id="male" />
@@ -635,17 +635,17 @@ export default function HealthTrackerView() {
                     </div>
                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="baby-weight">Weight at Birth (kg)</Label>
-                            <Input id="baby-weight" type="number" value={babyWeight} onChange={(e) => setBabyWeight(e.target.value)} placeholder="e.g. 3.4" required />
+                            <Label htmlFor="child-weight">Weight at Birth (kg)</Label>
+                            <Input id="child-weight" type="number" value={childWeight} onChange={(e) => setChildWeight(e.target.value)} placeholder="e.g. 3.4" required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="baby-height">Height at Birth (cm)</Label>
-                            <Input id="baby-height" type="number" value={babyHeight} onChange={(e) => setBabyHeight(e.target.value)} placeholder="e.g. 50" required />
+                            <Label htmlFor="child-height">Height at Birth (cm)</Label>
+                            <Input id="child-height" type="number" value={childHeight} onChange={(e) => setChildHeight(e.target.value)} placeholder="e.g. 50" required />
                         </div>
                     </div>
                     <DialogFooter>
-                         <Button type="submit" disabled={isSavingBaby}>
-                            {isSavingBaby && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                         <Button type="submit" disabled={isSavingChild}>
+                            {isSavingChild && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Create Profile
                         </Button>
                     </DialogFooter>
@@ -665,7 +665,7 @@ export default function HealthTrackerView() {
                 <DialogHeader>
                     <DialogTitle>Add New Measurement</DialogTitle>
                     <DialogDescription>
-                        Record {babyProfile?.name}'s weight and/or height.
+                        Record {childProfile?.name}'s weight and/or height.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleMeasurementSubmit} className="space-y-4">

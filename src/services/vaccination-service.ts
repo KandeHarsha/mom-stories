@@ -28,7 +28,7 @@ export interface MergedVaccination extends Vaccine {
 const defaultVaccinationSchedule: Omit<Vaccine, 'id'>[] = [
     { order: 1, name: 'Hepatitis B (HepB)', age: 'Birth', dose: '1st', description: 'Protects against Hepatitis B, a liver disease that can be serious. The first shot is usually given within 24 hours of birth.' },
     { order: 2, name: 'Hepatitis B (HepB)', age: '1-2 months', dose: '2nd', description: 'The second dose of the Hepatitis B vaccine series, continuing protection.' },
-    { order: 3, name: 'Rotavirus (RV)', age: '2 months', dose: '1st', description: 'Protects against rotavirus, which causes severe diarrhea, vomiting, fever, and abdominal pain, mostly in babies and young children.' },
+    { order: 3, name: 'Rotavirus (RV)', age: '2 months', dose: '1st', description: 'Protects against rotavirus, which causes severe diarrhea, vomiting, fever, and abdominal pain, mostly in infants and young children.' },
     { order: 4, name: 'DTaP', age: '2 months', dose: '1st', description: 'Protects against Diphtheria, Tetanus, and Pertussis (whooping cough).' },
     { order: 5, name: 'Hib', age: '2 months', dose: '1st', description: 'Protects against Haemophilus influenzae type b, a type of bacteria that can cause serious illness, including meningitis and pneumonia.' },
     { order: 6, name: 'Pneumococcal (PCV13)', age: '2 months', dose: '1st', description: 'Protects against pneumococcal disease, which can lead to ear infections, pneumonia, and meningitis.' },
