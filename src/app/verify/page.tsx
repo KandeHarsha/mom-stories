@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
-export default function VerifyPage() {
+function VerifyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -26,7 +26,7 @@ export default function VerifyPage() {
       try {
         const response = await fetch(`/api/auth/verify?vtoken=${vtoken}&vtype=${vtype}`);
         const data = await response.json();
-        
+
         console.log('Verify response:', { status: response.status, ok: response.ok, data });
 
         if (response.ok) {
@@ -67,26 +67,26 @@ export default function VerifyPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-center text-muted-foreground">{message}</p>
-          
+
           {status === 'success' && (
-            <Button 
-              onClick={() => router.push('/login')} 
+            <Button
+              onClick={() => router.push('/login')}
               className="w-full"
             >
               Go to Login
             </Button>
           )}
-          
+
           {status === 'error' && (
             <div className="space-y-2">
-              <Button 
-                onClick={() => router.push('/register')} 
+              <Button
+                onClick={() => router.push('/register')}
                 className="w-full"
               >
                 Back to Registration
               </Button>
-              <Button 
-                onClick={() => router.push('/')} 
+              <Button
+                onClick={() => router.push('/')}
                 variant="outline"
                 className="w-full"
               >
@@ -97,5 +97,24 @@ export default function VerifyPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Loader2 className="h-16 w-16 text-primary animate-spin" />
+            </div>
+            <CardTitle className="text-2xl">Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <VerifyContent />
+    </Suspense>
   );
 }
