@@ -30,18 +30,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const synced = { ...userObj };
 
     // Sync phase/Company
-    if (synced.Company) {
-      synced.phase = synced.Company;
-    } else if(synced.phase) {
-      synced.Company = synced.phase;
-    }
+    // if (synced.Company) {
+    //   synced.phase = synced.Company;
+    // } else if(synced.phase) {
+    //   synced.Company = synced.phase;
+    // }
     
-    // Sync name/FirstName
-    if (synced.FirstName) {
-      synced.name = synced.FirstName;
-    } else if (synced.name) {
-      synced.FirstName = synced.name;
-    }
+    // // Sync name/FirstName
+    // if (synced.FirstName) {
+    //   synced.name = synced.FirstName;
+    // } else if (synced.name) {
+    //   synced.FirstName = synced.name;
+    // }
 
     return synced;
   }
@@ -144,22 +144,24 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const isLoggedIn = !!user;
   const authRoutes = ['/login', '/register'];
+  const publicRoutes = ['/verify'];
   const isAuthRoute = authRoutes.includes(pathname);
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
   useEffect(() => {
     if (isLoading) return; 
 
-    if (!isLoggedIn && !isAuthRoute) {
+    if (!isLoggedIn && !isAuthRoute && !isPublicRoute) {
       router.push('/login');
     }
 
     if (isLoggedIn && isAuthRoute) {
       router.push('/dashboard');
     }
-  }, [isLoggedIn, isAuthRoute, router, isLoading]);
+  }, [isLoggedIn, isAuthRoute, isPublicRoute, router, isLoading]);
 
 
-  if (isLoading && !isAuthRoute) {
+  if (isLoading && !isAuthRoute && !isPublicRoute) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -167,9 +169,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  // If we are on an auth route, always render children.
+  // If we are on an auth route or public route, always render children without layout.
   // The useEffect above will handle redirection if the user is already logged in.
-  if (isAuthRoute) {
+  if (isAuthRoute || isPublicRoute) {
     return (
       <UserContext.Provider value={{ user, isLoggedIn, isLoading, login, logout, updateUser }}>
         {children}

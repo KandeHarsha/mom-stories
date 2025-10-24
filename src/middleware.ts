@@ -5,12 +5,22 @@ import type { NextRequest } from 'next/server';
 
 const protectedRoutes = ['/dashboard', '/journal', '/memory-box', '/ai-support', '/health', '/profile', '/settings', '/logout'];
 const authRoutes = ['/login', '/register'];
+const publicRoutes = ['/verify'];
 
 export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('session');
   const { pathname } = request.nextUrl;
 
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
+
+  console.log('[Middleware]', { pathname, isPublicRoute, isProtectedRoute, hasSession: !!sessionCookie });
+
+  // Allow access to public routes without authentication
+  if (isPublicRoute) {
+    console.log('[Middleware] Allowing public route:', pathname);
+    return NextResponse.next();
+  }
 
   // If the user is trying to access a protected route and doesn't have a session cookie,
   // redirect them to the login page.

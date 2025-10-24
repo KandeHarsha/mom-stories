@@ -16,34 +16,43 @@ export async function GET(request: Request) {
 
     try {
         const result = await verifyEmail(vtoken);
-        
+
+        // Check if LoginRadius returned an error
+        if (result.ErrorCode || result.Description) {
+            console.error("LoginRadius verification error:", result);
+            return NextResponse.json({ 
+                error: result.Description || result.Message || 'Email verification failed.' 
+            }, { status: 400 });
+        }
+
         // Extract user profile data from the verification response
         const profile = result?.Data?.Profile;
-        
+
         if (profile && profile.Uid) {
             // Add user to Firebase userProfiles collection
             await createUserProfile(profile.Uid, {
                 Uid: profile.Uid,
-                Id: profile.ID,
                 FirstName: profile.FirstName || '',
-                LastName: profile.LastName || '',
-                FullName: profile.FullName || profile.FirstName || '',
+                Email: profile.Email || [],
                 Provider: profile.Provider || '',
                 RegistrationProvider: profile.RegistrationProvider || '',
-                Email: profile.Email || [],
                 Identities: profile.Identities || null,
-                phase: profile.Company || '',
             });
-            loginUrl.searchParams.set('verified', 'true');
-            return NextResponse.redirect(loginUrl);
+            
+            return NextResponse.json({ 
+                success: true, 
+                message: 'Email verified successfully!' 
+            }, { status: 200 });
         }
-        
-        loginUrl.searchParams.set('error', 'Verification successful, but could not create profile.');
-        return NextResponse.redirect(loginUrl);
-        
+
+        return NextResponse.json({ 
+            error: 'Verification successful, but could not create profile.' 
+        }, { status: 400 });
+
     } catch (error: any) {
         console.error("Verification API Error:", error);
-        loginUrl.searchParams.set('error', error.message || 'Email verification failed.');
-        return NextResponse.redirect(loginUrl);
+        return NextResponse.json({ 
+            error: error.message || 'Email verification failed.' 
+        }, { status: 400 });
     }
 }

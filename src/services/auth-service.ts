@@ -27,9 +27,9 @@ export type LoginInput = z.infer<typeof loginSchema>;
 //                 Password: data.password,
 //                 FirstName: data.name,
 //                 Company: data.phase || null
-                // CustomFields: {
-                //     Phase: data.phase || '',
-                // }
+// CustomFields: {
+//     Phase: data.phase || '',
+// }
 //                 // Add additional profile fields if needed
 //             },
 //             {
@@ -91,6 +91,7 @@ export async function loginUser(data: LoginInput): Promise<any> {
                 params: {
                     apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
                     apisecret: process.env.LOGINRADIUS_API_SECRET,
+                    verificationurl: process.env.NEXT_PUBLIC_BASE_URL + '/verify'
                 },
                 headers: { 'Content-Type': 'application/json' }
             }
@@ -104,21 +105,21 @@ export async function loginUser(data: LoginInput): Promise<any> {
 export async function validateAccessToken(token: string): Promise<any> {
     try {
         const response = await axios.get(
-             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/access_token/validate`,
-             {
+            `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/access_token/validate`,
+            {
                 params: {
                     apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
                     apisecret: process.env.LOGINRADIUS_API_SECRET,
                 },
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
-             }
+            }
         );
         return response.data;
     } catch (error: any) {
-         throw new Error(error.response?.data?.Description || 'Token validation failed.');
+        throw new Error(error.response?.data?.Description || 'Token validation failed.');
     }
 }
 
@@ -146,7 +147,7 @@ export async function updateUserProfile(accessToken: string, profileFields: Reco
     try {
         const response = await axios.put(
             `${process.env.LOGINRADIUSBASE_URL}/identity/v2/auth/account`,
-            {FirstName: profileFields.name, Company: profileFields.phase},
+            { FirstName: profileFields.name, Company: profileFields.phase },
             {
                 params: {
                     apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY
@@ -171,13 +172,15 @@ export async function verifyEmail(vtoken: string): Promise<any> {
                 params: {
                     apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
                     verificationtoken: vtoken,
-                    verificationtype: 'emailverification'
                 }
             }
         );
-        return response.data;
+        console.log('resp', response);
+        
+        return response.data ? response.data : response;
     } catch (error: any) {
-        throw new Error(error.response?.data?.Description || "Email verification failed.");
+        // Only catch network errors, not HTTP error responses
+        throw new Error(error.message || "Email verification failed.");
     }
 }
 
