@@ -25,15 +25,13 @@ interface CreateChildProfileInput {
 
 export async function createChildProfile(input: CreateChildProfileInput): Promise<string> {
     try {
-        const creationDate = new Date();
-        
         const childDocRef = await addDoc(collection(db, 'children'), {
             parentId: input.parentId,
             name: input.name,
             birthday: Timestamp.fromDate(input.birthday),
             gender: input.gender,
-            height: [{ value: input.birthHeight, date: Timestamp.fromDate(creationDate) }],
-            weight: [{ value: input.birthWeight, date: Timestamp.fromDate(creationDate) }],
+            height: [{ value: input.birthHeight, date: Timestamp.fromDate(input.birthday) }],
+            weight: [{ value: input.birthWeight, date: Timestamp.fromDate(input.birthday) }],
             createdAt: serverTimestamp(),
         });
 

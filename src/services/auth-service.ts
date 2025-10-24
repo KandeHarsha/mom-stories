@@ -64,7 +64,7 @@ export async function registerUser(data: RegisterInput): Promise<any> {
             {
                 params: {
                     apikey: process.env.NEXT_PUBLIC_LOGINRADIUS_APIKEY,
-                    verificationurl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/verify`
+                    verificationurl: process.env.NEXT_PUBLIC_BASE_URL + '/verify'
                 },
                 headers: {
                     'Content-Type': 'application/json',

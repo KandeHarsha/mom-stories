@@ -7,7 +7,7 @@ export interface UserProfile {
     id: string;
     // name: string;
     email: string;
-    phase: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
+    phase?: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
     updatedAt: any;
     createdAt: any;
     // From LoginRadius
@@ -76,7 +76,6 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
             const defaultProfile = { 
                 FirstName: 'New User',
                 Email: [{Type: "Primary", Value: "xxxxxx@yyy.com"}],
-                phase: '', 
                 updatedAt: serverTimestamp(),
                 createdAt: serverTimestamp(),
             };
