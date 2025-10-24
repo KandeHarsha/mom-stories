@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const lrResponse = await loginUser(parsed.data);
+    let lrResponse = await loginUser(parsed.data);
 
     // Try several common fields where the access token may be returned
     const accessToken = lrResponse?.access_token || lrResponse?.accessToken || lrResponse?.token || lrResponse?.data?.access_token;

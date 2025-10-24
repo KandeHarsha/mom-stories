@@ -39,7 +39,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import Image from 'next/image';
 import { useUser } from '@/context/user-context';
-import { type ChildProfile, createChildProfile, getChildProfile } from '@/services/child-service';
+import { type ChildProfile, getChildProfile } from '@/services/child-service';
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -68,18 +68,18 @@ const momSleepData = [
 ];
 
 const momMoodData = [
-    { day: 'Mon', mood: 3 },
-    { day: 'Tue', mood: 4 },
-    { day: 'Wed', mood: 2 },
-    { day: 'Thu', mood: 5 },
-    { day: 'Fri', mood: 3 },
-    { day: 'Sat', mood: 5 },
-    { day: 'Sun', mood: 4 },
+  { day: 'Mon', mood: 3 },
+  { day: 'Tue', mood: 4 },
+  { day: 'Wed', mood: 2 },
+  { day: 'Thu', mood: 5 },
+  { day: 'Fri', mood: 3 },
+  { day: 'Sat', mood: 5 },
+  { day: 'Sun', mood: 4 },
 ];
 
 const momChartConfig = {
-    sleep: { label: 'Sleep (hours)', color: 'hsl(var(--chart-1))' },
-    mood: { label: 'Mood (1-5)', color: 'hsl(var(--chart-2))' }
+  sleep: { label: 'Sleep (hours)', color: 'hsl(var(--chart-1))' },
+  mood: { label: 'Mood (1-5)', color: 'hsl(var(--chart-2))' }
 }
 
 export default function HealthTrackerView() {
@@ -88,7 +88,7 @@ export default function HealthTrackerView() {
   const [isLoading, startLoadingTransition] = useTransition();
   const [isUpdating, startUpdateTransition] = useTransition();
   const { toast } = useToast();
-  
+
   const [isConfirming, setIsConfirming] = useState(false);
   const [selectedVax, setSelectedVax] = useState<MergedVaccination | null>(null);
   const [vaxImageFile, setVaxImageFile] = useState<File | null>(null);
@@ -96,7 +96,7 @@ export default function HealthTrackerView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
-  
+
   const [childProfile, setChildProfile] = useState<ChildProfile | null>(null);
   const [isChildProfileLoading, startChildProfileLoading] = useTransition();
   const [isChildFormOpen, setIsChildFormOpen] = useState(false);
@@ -127,7 +127,7 @@ export default function HealthTrackerView() {
 
   useEffect(() => {
     if (!user) return;
-    
+
     startChildProfileLoading(async () => {
       if (user.childId) {
         try {
@@ -162,7 +162,7 @@ export default function HealthTrackerView() {
         });
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, toast]);
 
   const handleChildProfileSubmit = async (e: React.FormEvent) => {
@@ -174,28 +174,37 @@ export default function HealthTrackerView() {
 
     startSavingChildTransition(async () => {
       try {
-        const newChildId = await createChildProfile({
-          name: childName,
-          birthday: childBirthday,
-          parentId: user.Uid,
-          birthWeight: parseFloat(childWeight),
-          birthHeight: parseFloat(childHeight),
-          gender: childGender,
+        const response = await fetch('/api/children', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            name: childName,
+            birthday: childBirthday.toISOString(),
+            birthWeight: childWeight,
+            birthHeight: childHeight,
+            gender: childGender,
+          })
         });
 
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.details || errorData.error || 'Failed to create child profile');
+        }
+
+        const { childId, profile } = await response.json();
+
+        // Update user context with new childId
         if (user) {
-          const updatedUser = { ...user, childId: newChildId };
+          const updatedUser = { ...user, childId };
           updateUser(updatedUser);
         }
-        
-        const profile = await getChildProfile(newChildId);
+
         setChildProfile(profile);
-        
         setIsChildFormOpen(false);
         toast({ title: 'Child Profile Created!', description: `${childName}'s profile is ready.` });
 
       } catch (error) {
-         toast({
+        toast({
           variant: 'destructive',
           title: 'Error creating profile',
           description: (error as Error).message,
@@ -216,7 +225,7 @@ export default function HealthTrackerView() {
       toast({ variant: 'destructive', title: 'Please select a date.' });
       return;
     }
-    
+
     startSavingMeasurementTransition(async () => {
       try {
         const response = await fetch(`/api/children/${childProfile.id}/measurements`, {
@@ -236,7 +245,7 @@ export default function HealthTrackerView() {
 
         const { profile: updatedProfile } = await response.json();
         setChildProfile(updatedProfile);
-        
+
         toast({ title: 'Measurement Saved!' });
         setIsMeasurementFormOpen(false);
         setNewWeight('');
@@ -256,21 +265,21 @@ export default function HealthTrackerView() {
 
   const childGrowthData = childProfile
     ? (() => {
-        // Preprocess height entries into a map keyed by toDateString
-        const heightByDateString = new Map<string, { date: string, value: number }>();
-        childProfile.height.forEach(h => {
-          heightByDateString.set(new Date(h.date).toDateString(), h);
-        });
-        return childProfile.weight.map(w => {
-          const wDateString = new Date(w.date).toDateString();
-          const matchingHeight = heightByDateString.get(wDateString);
-          return {
-            date: format(new Date(w.date), 'MMM d, yyyy'),
-            weight: w.value,
-            length: matchingHeight ? matchingHeight.value : null,
-          }
-        });
-      })()
+      // Preprocess height entries into a map keyed by toDateString
+      const heightByDateString = new Map<string, { date: string, value: number }>();
+      childProfile.height.forEach(h => {
+        heightByDateString.set(new Date(h.date).toDateString(), h);
+      });
+      return childProfile.weight.map(w => {
+        const wDateString = new Date(w.date).toDateString();
+        const matchingHeight = heightByDateString.get(wDateString);
+        return {
+          date: format(new Date(w.date), 'MMM d, yyyy'),
+          weight: w.value,
+          length: matchingHeight ? matchingHeight.value : null,
+        }
+      });
+    })()
     : [];
 
   const handleVaxStatusChange = (vax: MergedVaccination, checked: boolean) => {
@@ -317,44 +326,44 @@ export default function HealthTrackerView() {
     if (!selectedVax) return;
     updateStatus(selectedVax.id, 1, vaxImageFile);
   };
-  
+
   const updateStatus = (id: string, status: 0 | 1, imageFile: File | null = null) => {
     startUpdateTransition(async () => {
-        const formData = new FormData();
-        formData.append('status', String(status));
-        if (imageFile) {
-            formData.append('image', imageFile);
+      const formData = new FormData();
+      formData.append('status', String(status));
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
+      try {
+        const response = await fetch(`/api/vaccinations/${id}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(false), // Not JSON content type
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update vaccination status');
         }
 
-        try {
-            const response = await fetch(`/api/vaccinations/${id}`, {
-                method: 'PUT',
-                headers: getAuthHeaders(false), // Not JSON content type
-                body: formData,
-            });
+        const result = await response.json();
 
-            if (!response.ok) {
-                throw new Error('Failed to update vaccination status');
-            }
-            
-            const result = await response.json();
+        setVaccinations(vaccinations.map((v) =>
+          v.id === id ? { ...v, status, imageUrl: result.imageUrl || v.imageUrl } : v
+        ));
 
-            setVaccinations(vaccinations.map((v) =>
-                v.id === id ? { ...v, status, imageUrl: result.imageUrl || v.imageUrl } : v
-            ));
-
-            toast({
-                title: 'Status Updated',
-                description: 'Vaccination status has been saved.',
-            });
-            resetDialog();
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: (error as Error).message,
-            });
-        }
+        toast({
+          title: 'Status Updated',
+          description: 'Vaccination status has been saved.',
+        });
+        resetDialog();
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: (error as Error).message,
+        });
+      }
     });
   }
 
@@ -368,354 +377,353 @@ export default function HealthTrackerView() {
 
   return (
     <div className="space-y-6">
-        <div>
-            <h2 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-2">
-                <Baby className="h-8 w-8 text-primary"/>
-                Growth & Health Tools
-            </h2>
-            <p className="text-muted-foreground mt-1">
-                Keep track of important milestones and health data for you and your child.
-            </p>
-        </div>
-        <Tabs defaultValue="growth" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-lg">
-                <TabsTrigger value="growth">Child Growth</TabsTrigger>
-                <TabsTrigger value="vaccinations">Child Vaccinations</TabsTrigger>
-                <TabsTrigger value="mom">Mom's Wellness</TabsTrigger>
-            </TabsList>
-            <TabsContent value="growth" className="mt-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>{childProfile ? `${childProfile.name}'s Growth` : "Child's Growth Milestones"}</CardTitle>
-                        <CardDescription>Visualizing weight and height over time.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {isChildProfileLoading ? <Skeleton className="h-[400px] w-full" /> : (
-                        <ChartContainer config={childChartConfig} className="h-[400px] w-full">
-                            <ResponsiveContainer>
-                                <BarChart data={childGrowthData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
-                                    <YAxis yAxisId="left" orientation="left" stroke={childChartConfig.weight.color} />
-                                    <YAxis yAxisId="right" orientation="right" stroke={childChartConfig.length.color} />
-                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                    <Legend />
-                                    <Bar dataKey="weight" name="Weight (kg)" fill={childChartConfig.weight.color} radius={4} yAxisId="left" />
-                                    <Bar dataKey="length" name="Height (cm)" fill={childChartConfig.length.color} radius={4} yAxisId="right" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                      )}
-                    </CardContent>
-                    <CardFooter>
-                       {childProfile && (
-                           <Button onClick={() => setIsMeasurementFormOpen(true)}>
-                               <PlusCircle className="mr-2 h-4 w-4" />
-                               Add Measurement
-                           </Button>
-                       )}
-                    </CardFooter>
-                </Card>
-            </TabsContent>
-            <TabsContent value="vaccinations" className="mt-6">
-                <Card>
-                    <CardHeader>
-                         <CardTitle>Vaccination Schedule</CardTitle>
-                         <CardDescription>A simplified tracker for your child's immunizations. Always consult your pediatrician for official schedules.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {isLoading ? (
-                        <div className="space-y-2">
-                          <Skeleton className="h-12 w-full" />
-                          <Skeleton className="h-12 w-full" />
-                          <Skeleton className="h-12 w-full" />
-                        </div>
-                      ) : (
-                        <Accordion type="single" collapsible className="w-full">
-                           {vaccinations.map((vax) => (
-                             <AccordionItem value={`item-${vax.id}`} key={vax.id}>
-                               <AccordionTrigger className="hover:no-underline">
-                                 <div className="flex items-center justify-between w-full">
-                                   <div className="text-left">
-                                       <div className="font-semibold">{vax.name}</div>
-                                       <div className="text-sm text-muted-foreground">{`Recommended Age: ${vax.age} (Dose: ${vax.dose})`}</div>
-                                   </div>
-                                   <Badge variant={vax.status === 1 ? 'default' : 'secondary'} className={cn("mr-4", vax.status === 1 ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status === 1 ? 'Complete' : 'Pending'}</Badge>
-                                 </div>
-                               </AccordionTrigger>
-                               <AccordionContent>
-                                 <p className="text-muted-foreground mb-4">{vax.description}</p>
-                                 {vax.imageUrl && (
-                                    <Button variant="outline" size="sm" className="mb-4" onClick={() => setViewingImageUrl(vax.imageUrl!)}>
-                                      <View className="mr-2 h-4 w-4" />
-                                      View Document
-                                    </Button>
-                                  )}
-                                 <div className="flex items-center space-x-2">
-                                     <Checkbox
-                                       id={`vax-check-${vax.id}`}
-                                       checked={vax.status === 1}
-                                       onCheckedChange={(checked) => handleVaxStatusChange(vax, checked as boolean)}
-                                       aria-label={`Mark ${vax.name} as ${vax.status === 1 ? 'incomplete' : 'complete'}`}
-                                       disabled={isUpdating}
-                                     />
-                                     <Label htmlFor={`vax-check-${vax.id}`} className="cursor-pointer">
-                                        {vax.status === 1 ? 'Mark as incomplete' : 'Mark as complete'}
-                                     </Label>
-                                     {isUpdating && selectedVax?.id === vax.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                                 </div>
-                               </AccordionContent>
-                             </AccordionItem>
-                           ))}
-                         </Accordion>
-                      )}
-                    </CardContent>
-                </Card>
-            </TabsContent>
-            <TabsContent value="mom" className="mt-6">
-                <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Weekly Sleep Pattern</CardTitle>
-                            <CardDescription>Tracking your hours of sleep over the past week.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ChartContainer config={momChartConfig} className="h-[300px] w-full">
-                                <BarChart data={momSleepData}>
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} />
-                                    <YAxis />
-                                    <Tooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="hours" name="Hours" fill={momChartConfig.sleep.color} radius={4} />
-                                </BarChart>
-                            </ChartContainer>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Weekly Mood Tracker</CardTitle>
-                            <CardDescription>Tracking your mood on a scale of 1 to 5.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ChartContainer config={momChartConfig} className="h-[300px] w-full">
-                                <BarChart data={momMoodData}>
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} />
-                                    <YAxis domain={[0, 5]}/>
-                                    <Tooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="mood" name="Mood" fill={momChartConfig.mood.color} radius={4} />
-                                </BarChart>
-                            </ChartContainer>
-                        </CardContent>
-                    </Card>
+      <div>
+        <h2 className="text-3xl font-bold font-headline tracking-tight flex items-center gap-2">
+          <Baby className="h-8 w-8 text-primary" />
+          Growth & Health Tools
+        </h2>
+        <p className="text-muted-foreground mt-1">
+          Keep track of important milestones and health data for you and your child.
+        </p>
+      </div>
+      <Tabs defaultValue="growth" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
+          <TabsTrigger value="growth">Child Growth</TabsTrigger>
+          <TabsTrigger value="vaccinations">Child Vaccinations</TabsTrigger>
+          <TabsTrigger value="mom">Mom's Wellness</TabsTrigger>
+        </TabsList>
+        <TabsContent value="growth" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{childProfile ? `${childProfile.name}'s Growth` : "Child's Growth Milestones"}</CardTitle>
+              <CardDescription>Visualizing weight and height over time.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isChildProfileLoading ? <Skeleton className="h-[400px] w-full" /> : (
+                <ChartContainer config={childChartConfig} className="h-[400px] w-full">
+                  <ResponsiveContainer>
+                    <BarChart data={childGrowthData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                      <YAxis yAxisId="left" orientation="left" stroke={childChartConfig.weight.color} />
+                      <YAxis yAxisId="right" orientation="right" stroke={childChartConfig.length.color} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Legend />
+                      <Bar dataKey="weight" name="Weight (kg)" fill={childChartConfig.weight.color} radius={4} yAxisId="left" />
+                      <Bar dataKey="length" name="Height (cm)" fill={childChartConfig.length.color} radius={4} yAxisId="right" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              )}
+            </CardContent>
+            <CardFooter>
+              {childProfile && (
+                <Button onClick={() => setIsMeasurementFormOpen(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Measurement
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        <TabsContent value="vaccinations" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vaccination Schedule</CardTitle>
+              <CardDescription>A simplified tracker for your child's immunizations. Always consult your pediatrician for official schedules.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 </div>
-            </TabsContent>
-        </Tabs>
-        
-         <Dialog open={isConfirming} onOpenChange={(open) => !open && resetDialog()}>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Confirm Vaccination</DialogTitle>
-                    <DialogDescription>
-                        You are marking "{selectedVax?.name}" as complete. You can optionally upload a photo of the vaccination record.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4 flex-grow overflow-y-auto pr-4 -mr-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="vax-image-upload">Upload Record (Optional)</Label>
-                         <Button variant="outline" className="w-full justify-start gap-2" asChild>
-                            <label htmlFor="vax-image-upload" className="cursor-pointer">
-                            <ImagePlus className="h-5 w-5"/>
-                            <span>{vaxImageFile ? 'Change photo' : 'Upload photo'}</span>
-                            </label>
-                        </Button>
-                        <Input id="vax-image-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
-                    </div>
-
-                    {vaxImagePreview && vaxImageFile && (
-                        <div className="space-y-2">
-                            <Label>Photo Preview</Label>
-                            <div className="relative group">
-                                <Image src={vaxImagePreview} alt="Preview" width={200} height={200} className="rounded-lg w-full h-auto object-cover"/>
-                                <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-50 group-hover:opacity-100 transition-opacity" onClick={handleRemoveFile}>
-                                <X className="h-4 w-4"/>
-                                </Button>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground border rounded-md p-2">
-                                <Paperclip className="h-4 w-4"/>
-                                <span>{vaxImageFile.name}</span>
-                                <span className="ml-auto">{Math.round(vaxImageFile.size / 1024)} KB</span>
-                            </div>
+              ) : (
+                <Accordion type="single" collapsible className="w-full">
+                  {vaccinations.map((vax) => (
+                    <AccordionItem value={`item-${vax.id}`} key={vax.id}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="text-left">
+                            <div className="font-semibold">{vax.name}</div>
+                            <div className="text-sm text-muted-foreground">{`Recommended Age: ${vax.age} (Dose: ${vax.dose})`}</div>
+                          </div>
+                          <Badge variant={vax.status === 1 ? 'default' : 'secondary'} className={cn("mr-4", vax.status === 1 ? "bg-green-600 hover:bg-green-700" : "")}>{vax.status === 1 ? 'Complete' : 'Pending'}</Badge>
                         </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <p className="text-muted-foreground mb-4">{vax.description}</p>
+                        {vax.imageUrl && (
+                          <Button variant="outline" size="sm" className="mb-4" onClick={() => setViewingImageUrl(vax.imageUrl!)}>
+                            <View className="mr-2 h-4 w-4" />
+                            View Document
+                          </Button>
+                        )}
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`vax-check-${vax.id}`}
+                            checked={vax.status === 1}
+                            onCheckedChange={(checked) => handleVaxStatusChange(vax, checked as boolean)}
+                            aria-label={`Mark ${vax.name} as ${vax.status === 1 ? 'incomplete' : 'complete'}`}
+                            disabled={isUpdating}
+                          />
+                          <Label htmlFor={`vax-check-${vax.id}`} className="cursor-pointer">
+                            {vax.status === 1 ? 'Mark as incomplete' : 'Mark as complete'}
+                          </Label>
+                          {isUpdating && selectedVax?.id === vax.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="mom" className="mt-6">
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly Sleep Pattern</CardTitle>
+                <CardDescription>Tracking your hours of sleep over the past week.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={momChartConfig} className="h-[300px] w-full">
+                  <BarChart data={momSleepData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="hours" name="Hours" fill={momChartConfig.sleep.color} radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly Mood Tracker</CardTitle>
+                <CardDescription>Tracking your mood on a scale of 1 to 5.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={momChartConfig} className="h-[300px] w-full">
+                  <BarChart data={momMoodData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis domain={[0, 5]} />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="mood" name="Mood" fill={momChartConfig.mood.color} radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={isConfirming} onOpenChange={(open) => !open && resetDialog()}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Confirm Vaccination</DialogTitle>
+            <DialogDescription>
+              You are marking "{selectedVax?.name}" as complete. You can optionally upload a photo of the vaccination record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 flex-grow overflow-y-auto pr-4 -mr-4">
+            <div className="space-y-2">
+              <Label htmlFor="vax-image-upload">Upload Record (Optional)</Label>
+              <Button variant="outline" className="w-full justify-start gap-2" asChild>
+                <label htmlFor="vax-image-upload" className="cursor-pointer">
+                  <ImagePlus className="h-5 w-5" />
+                  <span>{vaxImageFile ? 'Change photo' : 'Upload photo'}</span>
+                </label>
+              </Button>
+              <Input id="vax-image-upload" type="file" className="hidden" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
+            </div>
+
+            {vaxImagePreview && vaxImageFile && (
+              <div className="space-y-2">
+                <Label>Photo Preview</Label>
+                <div className="relative group">
+                  <Image src={vaxImagePreview} alt="Preview" width={200} height={200} className="rounded-lg w-full h-auto object-cover" />
+                  <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6 opacity-50 group-hover:opacity-100 transition-opacity" onClick={handleRemoveFile}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground border rounded-md p-2">
+                  <Paperclip className="h-4 w-4" />
+                  <span>{vaxImageFile.name}</span>
+                  <span className="ml-auto">{Math.round(vaxImageFile.size / 1024)} KB</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="pt-4 flex-shrink-0">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary" onClick={resetDialog}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button onClick={handleConfirmUpdate} disabled={isUpdating}>
+              {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewingImageUrl} onOpenChange={() => setViewingImageUrl(null)}>
+        <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Vaccination Document</DialogTitle>
+          </DialogHeader>
+          <div className="relative h-[75vh]">
+            <Image src={viewingImageUrl || ''} alt="Vaccination Document" layout="fill" objectFit="contain" className="rounded-md" />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isChildFormOpen} onOpenChange={setIsChildFormOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Child's Profile</DialogTitle>
+            <DialogDescription>
+              Let's get your child's growth tracking started. This can be updated later.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleChildProfileSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="child-name">Child's Name</Label>
+              <Input id="child-name" value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="e.g. Leo" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="child-birthday">Birthday</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !childBirthday && "text-muted-foreground"
                     )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {childBirthday ? format(childBirthday, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={childBirthday}
+                    onSelect={setChildBirthday}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label>Gender</Label>
+              <RadioGroup
+                required
+                className="flex items-center gap-4"
+                onValueChange={(value: 'Male' | 'Female' | 'Other') => setChildGender(value)}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Male" id="male" />
+                  <Label htmlFor="male">Male</Label>
                 </div>
-                <DialogFooter className="pt-4 flex-shrink-0">
-                    <DialogClose asChild>
-                        <Button type="button" variant="secondary" onClick={resetDialog}>
-                            Cancel
-                        </Button>
-                    </DialogClose>
-                    <Button onClick={handleConfirmUpdate} disabled={isUpdating}>
-                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <Dialog open={!!viewingImageUrl} onOpenChange={() => setViewingImageUrl(null)}>
-            <DialogContent className="sm:max-w-xl md:max-w-2xl lg:max-w-4xl max-h-[90vh]">
-                 <DialogHeader>
-                    <DialogTitle>Vaccination Document</DialogTitle>
-                </DialogHeader>
-                <div className="relative h-[75vh]">
-                    <Image src={viewingImageUrl || ''} alt="Vaccination Document" layout="fill" objectFit="contain" className="rounded-md" />
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Female" id="female" />
+                  <Label htmlFor="female">Female</Label>
                 </div>
-            </DialogContent>
-        </Dialog>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Other" id="other" />
+                  <Label htmlFor="other">Other</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="child-weight">Weight at Birth (kg)</Label>
+                <Input id="child-weight" type="number" value={childWeight} onChange={(e) => setChildWeight(e.target.value)} placeholder="e.g. 3.4" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="child-height">Height at Birth (cm)</Label>
+                <Input id="child-height" type="number" value={childHeight} onChange={(e) => setChildHeight(e.target.value)} placeholder="e.g. 50" required />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={isSavingChild}>
+                {isSavingChild && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create Profile
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-        <Dialog open={isChildFormOpen} onOpenChange={setIsChildFormOpen}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Create Child's Profile</DialogTitle>
-                    <DialogDescription>
-                        Let's get your child's growth tracking started. This can be updated later.
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleChildProfileSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="child-name">Child's Name</Label>
-                        <Input id="child-name" value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="e.g. Leo" required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="child-birthday">Birthday</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !childBirthday && "text-muted-foreground"
-                                    )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {childBirthday ? format(childBirthday, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                mode="single"
-                                selected={childBirthday}
-                                onSelect={setChildBirthday}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Gender</Label>
-                        <RadioGroup 
-                            required 
-                            className="flex items-center gap-4" 
-                            onValueChange={(value: 'Male' | 'Female' | 'Other') => setChildGender(value)}
-                        >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Male" id="male" />
-                                <Label htmlFor="male">Male</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Female" id="female" />
-                                <Label htmlFor="female">Female</Label>
-                            </div>
-                             <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="Other" id="other" />
-                                <Label htmlFor="other">Other</Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="child-weight">Weight at Birth (kg)</Label>
-                            <Input id="child-weight" type="number" value={childWeight} onChange={(e) => setChildWeight(e.target.value)} placeholder="e.g. 3.4" required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="child-height">Height at Birth (cm)</Label>
-                            <Input id="child-height" type="number" value={childHeight} onChange={(e) => setChildHeight(e.target.value)} placeholder="e.g. 50" required />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                         <Button type="submit" disabled={isSavingChild}>
-                            {isSavingChild && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Profile
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-
-        <Dialog open={isMeasurementFormOpen} onOpenChange={
-          (isOpen) => {
-            setIsMeasurementFormOpen(isOpen);
-            if (!isOpen) {
-              setUseBirthdayDate(false); // Reset on close
-            }
+      <Dialog open={isMeasurementFormOpen} onOpenChange={
+        (isOpen) => {
+          setIsMeasurementFormOpen(isOpen);
+          if (!isOpen) {
+            setUseBirthdayDate(false); // Reset on close
           }
-        }>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Add New Measurement</DialogTitle>
-                    <DialogDescription>
-                        Record {childProfile?.name}'s weight and/or height.
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleMeasurementSubmit} className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <Switch id="birthday-switch" checked={useBirthdayDate} onCheckedChange={setUseBirthdayDate} />
-                        <Label htmlFor="birthday-switch">Use birthday for date</Label>
-                    </div>
+        }
+      }>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Measurement</DialogTitle>
+            <DialogDescription>
+              Record {childProfile?.name}'s weight and/or height.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleMeasurementSubmit} className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch id="birthday-switch" checked={useBirthdayDate} onCheckedChange={setUseBirthdayDate} />
+              <Label htmlFor="birthday-switch">Use birthday for date</Label>
+            </div>
 
-                    <div className="space-y-2">
-                        <Label>Date</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn("w-full justify-start text-left font-normal", !measurementDate && "text-muted-foreground")}
-                                    disabled={useBirthdayDate}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {measurementDate ? format(measurementDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar mode="single" selected={measurementDate} onSelect={setMeasurementDate} initialFocus />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="new-weight">Weight (kg)</Label>
-                            <Input id="new-weight" type="number" step="0.01" value={newWeight} onChange={(e) => setNewWeight(e.target.value)} placeholder="e.g. 4.1" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="new-height">Height (cm)</Label>
-                            <Input id="new-height" type="number" step="0.1" value={newHeight} onChange={(e) => setNewHeight(e.target.value)} placeholder="e.g. 53.5" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                         <DialogClose asChild>
-                            <Button type="button" variant="secondary">Cancel</Button>
-                         </DialogClose>
-                         <Button type="submit" disabled={isSavingMeasurement}>
-                            {isSavingMeasurement && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Measurement
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn("w-full justify-start text-left font-normal", !measurementDate && "text-muted-foreground")}
+                    disabled={useBirthdayDate}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {measurementDate ? format(measurementDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={measurementDate} onSelect={setMeasurementDate} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-weight">Weight (kg)</Label>
+                <Input id="new-weight" type="number" step="0.01" value={newWeight} onChange={(e) => setNewWeight(e.target.value)} placeholder="e.g. 4.1" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-height">Height (cm)</Label>
+                <Input id="new-height" type="number" step="0.1" value={newHeight} onChange={(e) => setNewHeight(e.target.value)} placeholder="e.g. 53.5" />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSavingMeasurement}>
+                {isSavingMeasurement && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Measurement
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-    
