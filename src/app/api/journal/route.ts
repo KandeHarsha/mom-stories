@@ -1,17 +1,21 @@
 // src/app/api/journal/route.ts
 import { NextResponse } from 'next/server';
 import { getJournalEntries, addJournalEntry, uploadFileAndGetURL } from '@/services/journal-service';
-import { validateAccessToken, getUserProfile } from '@/services/auth-service';
+import { getUserProfile } from '@/services/auth-service';
+import { auth } from "@/lib/auth";
+
 // Get all entries
 export async function GET(request: Request) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
         }
 
-        const userProfileResponse  = await getUserProfile(token);
-        const entries = await getJournalEntries(userProfileResponse.Uid);
+        const entries = await getJournalEntries(session.user.id);
         return new NextResponse(JSON.stringify(entries), { status: 200 });
     } catch (error) {
         console.error('Get Journal Entries Error:', error);
