@@ -37,8 +37,20 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-			console.log("Request path:", ctx.path);
-		}),
+      const validPhases = ["preparation", "pregnancy", "post_delivery"];
+      
+      if (ctx.body && typeof ctx.body === "object" && "phase" in ctx.body) {
+        const phase = (ctx.body as Record<string, unknown>).phase;
+        if (phase && !validPhases.includes(String(phase))) {
+          return {
+            status: 400,
+            body: {
+              error: "Invalid phase. Must be one of: preparation, pregnancy, post_delivery"
+            }
+          };
+        }
+      }
+  }),
   },
   // disabledPaths: ["/sign-up/email", "/sign-in/email"],
 });
