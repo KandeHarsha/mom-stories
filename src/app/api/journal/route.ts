@@ -1,7 +1,6 @@
 // src/app/api/journal/route.ts
 import { NextResponse } from 'next/server';
 import { getJournalEntries, addJournalEntry, uploadFileAndGetURL } from '@/services/journal-service';
-import { getUserProfile } from '@/services/auth-service';
 import { auth } from "@/lib/auth";
 
 // Get all entries
@@ -27,14 +26,16 @@ export async function GET(request: Request) {
 // Create a new entry
 export async function POST(request: Request) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+         const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
         }
 
-        const userProfileResponse  = await getUserProfile(token);
         
-        const userId = userProfileResponse.Uid;
+        const userId = session.user.id
 
         const formData = await request.formData();
         const title = formData.get('title') as string;
