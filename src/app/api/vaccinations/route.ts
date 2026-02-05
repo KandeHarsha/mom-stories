@@ -2,21 +2,23 @@
 import { NextResponse } from 'next/server';
 import { getVaccinations } from '@/services/vaccination-service';
 import { getUserProfile } from '@/services/auth-service';
+import { auth } from '@/lib/auth';
 
 // Get all vaccinations for a user
 export async function GET(request: Request) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
         }
+
+
+        const userId = session.user.id
         
-        const userProfileResponse = await getUserProfile(token);
-        if (!userProfileResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
-        }
-        
-        const vaccinations = await getVaccinations(userProfileResponse.Uid);
+        const vaccinations = await getVaccinations(userId);
         return NextResponse.json(vaccinations, { status: 200 });
 
     } catch (error) {

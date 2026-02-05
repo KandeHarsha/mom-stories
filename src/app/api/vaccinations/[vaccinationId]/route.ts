@@ -1,21 +1,22 @@
 // src/app/api/vaccinations/[vaccinationId]/route.ts
 import { NextResponse } from 'next/server';
 import { updateVaccinationStatus } from '@/services/vaccination-service';
-import { getUserProfile } from '@/services/auth-service';
 import { uploadFileAndGetURL } from '@/services/journal-service';
+import { auth } from '@/lib/auth';
 
 // Update vaccination status
 export async function PUT(request: Request, { params }: { params: { vaccinationId: string } }) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
         }
 
-        const userProfileResponse = await getUserProfile(token);
-        if (!userProfileResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
-        }
+        
+        const userId = session.user.id
         
         const vaccinationId = params.vaccinationId;
         if (!vaccinationId) {
@@ -31,10 +32,10 @@ export async function PUT(request: Request, { params }: { params: { vaccinationI
         let imageUrl: string | undefined = undefined;
 
         if (imageFile && imageFile.size > 0) {
-            imageUrl = await uploadFileAndGetURL(imageFile, userProfileResponse.Uid, 'vaccination-tags');
+            imageUrl = await uploadFileAndGetURL(imageFile, userId, 'vaccination-tags');
         }
 
-        await updateVaccinationStatus(userProfileResponse.Uid, vaccinationId, status, imageUrl);
+        await updateVaccinationStatus(userId, vaccinationId, status, imageUrl);
 
         return new NextResponse(JSON.stringify({ success: true, imageUrl }), { status: 200 });
 
