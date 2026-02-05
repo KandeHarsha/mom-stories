@@ -1,7 +1,6 @@
 // src/services/child-service.ts
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp, collection, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { updateUserProfile } from './user-service';
+import { doc, getDoc, serverTimestamp, Timestamp, collection, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 export interface ChildProfile {
     id: string;
@@ -35,16 +34,12 @@ export async function createChildProfile(input: CreateChildProfileInput): Promis
             createdAt: serverTimestamp(),
         });
 
-        // Link this new child ID to the user's profile
-        await updateUserProfile(input.parentId, { childId: childDocRef.id });
-
         return childDocRef.id;
     } catch (e) {
         console.error("Error creating child profile: ", e);
         throw new Error('Could not create child profile.');
     }
 }
-
 
 export async function getChildProfile(childId: string): Promise<ChildProfile | null> {
     if (!childId) return null;
@@ -108,4 +103,22 @@ export async function addMeasurement(childId: string, measurement: { weight?: nu
         console.error("Error adding measurement: ", e);
         throw new Error('Could not add measurement.');
     }
+}
+
+// Function to get all child profiles for a parent
+export async function getChildrenProfiles(childrenIds: string[]): Promise<ChildProfile[]> {
+    const profiles: ChildProfile[] = [];
+    
+    for (const childId of childrenIds) {
+        try {
+            const profile = await getChildProfile(childId);
+            if (profile) {
+                profiles.push(profile);
+            }
+        } catch (error) {
+            console.error(`Error fetching child profile ${childId}:`, error);
+        }
+    }
+    
+    return profiles;
 }
