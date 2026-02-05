@@ -1,30 +1,30 @@
 // src/app/api/children/[childId]/measurements/route.ts
 import { NextResponse } from 'next/server';
 import { addMeasurement } from '@/services/child-service';
-import { getUserProfile } from '@/services/auth-service';
+import { auth } from '@/lib/auth';
 import { getChildProfile } from '@/services/child-service';
 
 // Add a new measurement
 export async function POST(request: Request, { params }: { params: { childId: string } }) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
         }
 
-        const userProfileResponse = await getUserProfile(token);
-        if (!userProfileResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
-        }
+        const userId = session.user.id;
+        let childId = params.childId;
 
-        const childId = params.childId;
         if (!childId) {
             return new NextResponse(JSON.stringify({ error: 'Child ID is required.' }), { status: 400 });
         }
         
         // Security check: ensure the user is the parent of the child
         const childProfile = await getChildProfile(childId);
-        if (childProfile?.parentId !== userProfileResponse.Uid) {
+        if (!childProfile || childProfile.parentId !== userId) {
             return new NextResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
         }
 

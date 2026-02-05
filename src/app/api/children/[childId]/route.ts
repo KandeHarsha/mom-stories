@@ -1,28 +1,37 @@
 import { NextResponse } from 'next/server';
-import { getUserProfile } from '@/services/auth-service';
+import { auth } from '@/lib/auth';
 import { getChildProfile } from '@/services/child-service';
 
 // Get child profile by childId
 export async function GET(request: Request, { params }: { params: { childId: string } }) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
         }
 
-        const userProfileResponse = await getUserProfile(token);
-        if (!userProfileResponse.Uid) {
-            return new NextResponse(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
+        const userId = session.user.id;
+        let childId = params.childId;
+
+        // If childId is "first", get the first child from user's childrenIds array
+        if (childId === "first") {
+            const childrenIds = (session.user.childrenIds as string[]) || [];
+            if (childrenIds.length === 0) {
+                return new NextResponse(JSON.stringify({ error: 'No children found for this user.' }), { status: 404 });
+            }
+            childId = childrenIds[0];
         }
 
-        const childId = params.childId;
         if (!childId) {
             return new NextResponse(JSON.stringify({ error: 'Child ID is required.' }), { status: 400 });
         }
 
         // Security check: ensure the user is the parent of the child
         const childProfile = await getChildProfile(childId);
-        if (!childProfile || childProfile.parentId !== userProfileResponse.Uid) {
+        if (!childProfile || childProfile.parentId !== userId) {
             return new NextResponse(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
         }
 

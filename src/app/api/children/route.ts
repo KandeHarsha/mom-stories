@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createChildProfile } from '@/services/child-service';
-import { getUserProfile } from '@/services/auth-service';
+import { auth } from '@/lib/auth';
 
 // Create a new child profile
 export async function POST(request: Request) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
         }
 
-        const userProfileResponse = await getUserProfile(token);
-        if (!userProfileResponse.Uid) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
+        const userId = session.user.id;
 
         const data = await request.json();
         const { name, birthday, birthHeight, birthWeight, gender } = data;
@@ -31,14 +31,25 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // Create child profile
+        // Create child profile and update user's childrenIds
         const childId = await createChildProfile({
-            parentId: userProfileResponse.Uid,
+            parentId: userId,
             name,
             birthday: new Date(birthday),
             birthHeight: parseFloat(birthHeight),
             birthWeight: parseFloat(birthWeight),
             gender,
+        });
+
+        // Update user's childrenIds array using better-auth
+        const currentChildrenIds = (session.user.childrenIds as string[]) || [];
+        if (!currentChildrenIds.includes(childId)) {
+            currentChildrenIds.push(childId);
+        }
+
+        await auth.api.updateUser({
+            body: { childrenIds: currentChildrenIds },
+            headers: request.headers
         });
 
         // Fetch the created child profile to return to client
@@ -49,7 +60,7 @@ export async function POST(request: Request) {
             success: true, 
             childId,
             profile: childProfile,
-            message: 'Child profile created successfully!' 
+            message: 'Child profile created successfully!'
         }, { status: 201 });
 
     } catch (error) {
