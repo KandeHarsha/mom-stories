@@ -1,16 +1,17 @@
 
 import { NextResponse } from 'next/server';
-import { aiPoweredSupport } from '@/ai/flows/ai-powered-support';
+import { aiPoweredSupport, ConversationHistory } from '@/ai/flows/ai-powered-support';
 
 export async function POST(request: Request) {
   try {
-    const { question } = await request.json();
+    const { question, history } = await request.json();
 
     if (!question) {
       return NextResponse.json({ error: 'Missing question in request body' }, { status: 400 });
     }
 
-    const response = await aiPoweredSupport({ question });
+    const conversationHistory: ConversationHistory[] = history || [];
+    const response = await aiPoweredSupport(question, conversationHistory);
 
     return NextResponse.json(response);
   } catch (error) {
