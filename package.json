@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/infra": "^0.1.8",
     "@genkit-ai/googleai": "^1.14.1",
     "@genkit-ai/next": "^1.14.1",
     "@google/genai": "^1.43.0",

@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { createAuthMiddleware } from "better-auth/api";
+import { dash } from "@better-auth/infra";
 
 const client = new MongoClient(process.env.MONGODB_CLUSTER_URL as string);
 const db = client.db();
@@ -52,5 +53,8 @@ export const auth = betterAuth({
       }
   }),
   },
+   plugins: [
+    dash()
+  ]
   // disabledPaths: ["/sign-up/email", "/sign-in/email"],
 });
