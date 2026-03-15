@@ -90,7 +90,7 @@ export async function aiPoweredSupport(userInput: string, history: ConversationH
       });
 
       return {
-        text: finalizeResponse(response.text || ''),
+        response: finalizeResponse(response.text || ''),
         history: [
           { role: 'user' as const, parts: [{ text: userInput }] },
           { role: 'model' as const, parts: [{ text: finalizeResponse(response.text || '') }] },
@@ -113,7 +113,7 @@ export async function aiPoweredSupport(userInput: string, history: ConversationH
     const response = await chat.sendMessage({ message: userInput });
     
     return {
-      text: finalizeResponse(response.text || ''),
+      response: finalizeResponse(response.text || ''),
       history: [...history, 
         { role: 'user' as const, parts: [{ text: userInput }] },
         { role: 'model' as const, parts: [{ text: finalizeResponse(response.text || '') }] },

@@ -3,6 +3,8 @@ import { toNextJsHandler } from "better-auth/next-js";
 
 export const { POST, GET } = toNextJsHandler(auth);
 
+export const runtime = 'nodejs';
+
 // Core authentication
 
 // POST /auth/sign-up – create a new user

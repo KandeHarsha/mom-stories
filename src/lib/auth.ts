@@ -3,6 +3,8 @@ import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { createAuthMiddleware } from "better-auth/api";
 import { dash } from "@better-auth/infra";
+import { emailOTP } from "better-auth/plugins";
+import { sendPasswordResetOTP, sendVerificationOTP } from "@/services/email-service";
 
 const client = new MongoClient(process.env.MONGODB_CLUSTER_URL as string);
 const db = client.db();
@@ -17,6 +19,8 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: false,
+    autoSignIn: true,
   },
   socialProviders: {
     google: {
@@ -51,10 +55,26 @@ export const auth = betterAuth({
           };
         }
       }
-  }),
+    }),
   },
-   plugins: [
-    dash()
+  plugins: [
+    dash(),
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        console.log(`Sending ${type} OTP to ${email}: ${otp}`);
+        
+        if (type === "forget-password") {
+          await sendPasswordResetOTP(email, otp, 10);
+        } else if (type === "email-verification") {
+          await sendVerificationOTP(email, otp, 10);
+        } else {
+          // Default: send verification OTP
+          await sendVerificationOTP(email, otp, 10);
+        }
+      },
+      otpLength: 6,
+      expiresIn: 600, // 10 minutes in seconds
+    })
   ]
   // disabledPaths: ["/sign-up/email", "/sign-in/email"],
 });
