@@ -75,25 +75,25 @@ export async function POST(request: Request) {
         }
 
         // Validate type if provided
-        const validTypes = ['bugReport', 'featureRequest'];
+        const validTypes = ['bugReport', 'featureRequest', 'general'];
         const ticketType = type || 'bugReport';
         
         if (!validTypes.includes(ticketType)) {
             return new NextResponse(
-                JSON.stringify({ error: 'Type must be either "bugReport" or "featureRequest".' }), 
+                JSON.stringify({ error: 'Type must be either "bugReport", "featureRequest", or "general".' }), 
                 { status: 400 }
             );
         }
 
         // Create ticket data
         const ticketData: {
-            type: 'bugReport' | 'featureRequest';
+            type: 'bugReport' | 'featureRequest' | 'general';
             userId?: string;
             email?: string;
             query: string;
             status: string;
         } = {
-            type: ticketType as 'bugReport' | 'featureRequest',
+            type: ticketType as 'bugReport' | 'featureRequest' | 'general',
             query: query.trim(),
             status: 'submitted',
         };
