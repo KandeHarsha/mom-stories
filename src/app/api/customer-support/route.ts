@@ -1,7 +1,38 @@
 // src/app/api/customer-support/route.ts
 import { NextResponse } from 'next/server';
-import { createCustomerSupportTicket } from '@/services/customer-support-service';
+import { createCustomerSupportTicket, getCustomerSupportTickets } from '@/services/customer-support-service';
 import { auth } from "@/lib/auth";
+
+// Get all customer support tickets for the authenticated user
+export async function GET(request: Request) {
+    try {
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+
+        if (!session) {
+            return new Response("Unauthorized", { status: 401 });
+        }
+
+        const userId = session.user.id;
+        const tickets = await getCustomerSupportTickets(userId);
+        
+        return new NextResponse(
+            JSON.stringify(tickets), 
+            { status: 200 }
+        );
+    } catch (error) {
+        console.error('Get Customer Support Tickets Error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return new NextResponse(
+            JSON.stringify({ 
+                error: 'Failed to fetch customer support tickets.', 
+                details: errorMessage 
+            }), 
+            { status: 500 }
+        );
+    }
+}
 
 // Create a new customer support ticket
 export async function POST(request: Request) {

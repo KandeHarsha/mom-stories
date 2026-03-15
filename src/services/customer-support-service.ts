@@ -40,21 +40,13 @@ export async function createCustomerSupportTicket(
     }
 }
 
-export async function getCustomerSupportTickets(userId?: string): Promise<CustomerSupportTicket[]> {
+export async function getCustomerSupportTickets(userId: string): Promise<CustomerSupportTicket[]> {
     try {
-        let q;
-        if (userId) {
-            q = query(
-                collection(db, "customerSupport"),
-                where("userId", "==", userId),
-                orderBy("createdAt", "desc")
-            );
-        } else {
-            q = query(
-                collection(db, "customerSupport"),
-                orderBy("createdAt", "desc")
-            );
-        }
+        const q = query(
+            collection(db, "customerSupport"),
+            where("userId", "==", userId),
+            orderBy("createdAt", "desc")
+        );
         
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => ({
