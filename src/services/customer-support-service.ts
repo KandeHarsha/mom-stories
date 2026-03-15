@@ -4,7 +4,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp
 
 export interface CustomerSupportTicket {
     id: string;
-    type: 'bugReport' | 'featureRequest';
+    type: 'bugReport' | 'featureRequest' | 'general';
     userId?: string;
     email?: string;
     query: string;
@@ -20,7 +20,7 @@ export interface CustomerSupportTicketData extends Omit<CustomerSupportTicket, '
 
 export async function createCustomerSupportTicket(
     ticketData: {
-        type: 'bugReport' | 'featureRequest';
+        type: 'bugReport' | 'featureRequest' | 'general';
         userId?: string;
         email?: string;
         query: string;
