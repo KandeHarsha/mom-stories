@@ -1,8 +1,8 @@
 // src/app/api/push-tokens/route.ts
 import { NextResponse } from 'next/server';
 import { savePushToken } from '@/services/notification-service';
-import { getUserProfile } from '@/services/auth-service';
 import { z } from 'zod';
+import { auth } from '@/lib/auth';
 
 const pushTokenSchema = z.object({
     expoPushToken: z.string().startsWith('ExponentPushToken['),
@@ -12,14 +12,11 @@ const pushTokenSchema = z.object({
 
 export async function POST(request: Request) {
     try {
-        const token = request.headers.get('Authorization')?.split(' ')[1];
-        if (!token) {
+        const session = await auth.api.getSession({
+            headers: request.headers,
+        });
+        if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const userProfile = await getUserProfile(token);
-        if (!userProfile.Uid) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
         const body = await request.json();
@@ -30,7 +27,7 @@ export async function POST(request: Request) {
         }
         
         await savePushToken({
-            userId: userProfile.Uid,
+            userId: session.user.id,
             ...validatedData.data,
         });
 
