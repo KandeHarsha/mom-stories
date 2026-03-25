@@ -10,7 +10,8 @@ import {
   where, 
   Timestamp,
   updateDoc,
-  doc
+  doc,
+  getDoc
 } from 'firebase/firestore';
 
 /**
@@ -74,6 +75,35 @@ export async function updateSession(sessionId: string): Promise<void> {
 }
 
 /**
+ * Get a session by ID and verify ownership
+ */
+export async function getSessionById(sessionId: string, userId: string): Promise<AISession | null> {
+  try {
+    const docRef = doc(db, 'aiSessions', sessionId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    const sessionData = docSnap.data();
+    
+    // Verify ownership
+    if (sessionData.userId !== userId) {
+      throw new Error('Unauthorized access to session.');
+    }
+
+    return {
+      id: docSnap.id,
+      ...sessionData,
+    } as AISession;
+  } catch (error) {
+    console.error("Error fetching session: ", error);
+    throw error;
+  }
+}
+
+/**
  * Create a new message in a session
  */
 export async function createMessage(
@@ -97,6 +127,34 @@ export async function createMessage(
   } catch (error) {
     console.error("Error creating message: ", error);
     throw new Error('Could not create message.');
+  }
+}
+
+/**
+ * Get all sessions for a user ordered by most recently updated
+ */
+export async function getSessions(userId: string): Promise<AISession[]> {
+  try {
+    const q = query(
+      collection(db, 'aiSessions'),
+      where('userId', '==', userId),
+      orderBy('updatedAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const sessions: AISession[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      sessions.push({
+        id: doc.id,
+        ...doc.data(),
+      } as AISession);
+    });
+    
+    return sessions;
+  } catch (error) {
+    console.error("Error fetching sessions: ", error);
+    throw new Error('Could not fetch sessions.');
   }
 }
 
