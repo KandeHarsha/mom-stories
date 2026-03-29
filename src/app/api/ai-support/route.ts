@@ -23,7 +23,15 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     // Parse request body
-    const { question, sessionId } = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
+    
+    const { question, sessionId } = body;
 
     if (!question || typeof question !== 'string') {
       return NextResponse.json({ error: 'Missing or invalid question in request body' }, { status: 400 });
@@ -53,7 +61,11 @@ export async function POST(request: Request) {
         aiResponse.response, 
         'model',
         {
-          model: 'gemini-2.5-flash',
+          model: aiResponse.model,
+          promptTokenCount: aiResponse.promptTokenCount,
+          candidatesTokenCount: aiResponse.candidatesTokenCount,
+          totalTokenCount: aiResponse.totalTokenCount,
+          thoughtsTokenCount: aiResponse.thoughtsTokenCount,
         }
       );
 
@@ -94,7 +106,11 @@ export async function POST(request: Request) {
       aiResponse.response, 
       'model',
       {
-        model: 'gemini-2.5-flash',
+        model: aiResponse.model,
+        promptTokenCount: aiResponse.promptTokenCount,
+        candidatesTokenCount: aiResponse.candidatesTokenCount,
+        totalTokenCount: aiResponse.totalTokenCount,
+        thoughtsTokenCount: aiResponse.thoughtsTokenCount,
       }
     );
 

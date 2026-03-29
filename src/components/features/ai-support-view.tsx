@@ -165,7 +165,7 @@ function AiSupportComponent() {
       try {
         const response = await fetch('/api/ai-support', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ question }),
         });
         const result = await response.json();
@@ -174,10 +174,10 @@ function AiSupportComponent() {
             throw new Error(result.error || 'Failed to get an answer.');
         }
 
-        if (result.answer) {
+        if (result.response) {
             setMessages((prev) => [
               ...prev,
-              { id: Date.now() + 1, text: result.answer!, sender: 'ai', questionForAi: question },
+              { id: Date.now() + 1, text: result.response!, sender: 'ai', questionForAi: question },
             ]);
         }
       } catch(error) {
