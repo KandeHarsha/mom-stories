@@ -11,6 +11,7 @@ export interface JournalEntry {
     createdAt: any; // Can be Timestamp on read, FieldValue on write
     imageUrl?: string;
     voiceNoteUrl?: string;
+    category?: string;
     tags?: string[];
 }
 
@@ -31,7 +32,7 @@ export async function addJournalEntry(entry: Omit<JournalEntry, 'id' | 'createdA
     }
 }
 
-export async function updateJournalEntry(entryId: string, userId: string, data: Partial<Pick<JournalEntry, 'title' | 'content'>>): Promise<void> {
+export async function updateJournalEntry(entryId: string, userId: string, data: Partial<Pick<JournalEntry, 'title' | 'content' | 'category' | 'tags'>>): Promise<void> {
     try {
         const docRef = doc(db, 'journalEntries', entryId);
         const docSnap = await getDoc(docRef);
