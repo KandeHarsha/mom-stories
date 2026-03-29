@@ -1,7 +1,6 @@
 // src/app/api/journal/[entryId]/route.ts
 import { NextResponse } from 'next/server';
 import { updateJournalEntry, deleteJournalEntry } from '@/services/journal-service';
-import { getUserProfile } from '@/services/auth-service';
 import { auth } from '@/lib/auth';
 
 // Update an entry
@@ -25,11 +24,28 @@ export async function PUT(request: Request, { params }: { params: { entryId: str
         
         const data = await request.json();
 
+        const updateData: {
+            title?: string;
+            content?: string;
+            category?: string;
+            tags?: string[];
+        } = {};
+
+        if (data.title !== undefined) {
+            updateData.title = data.title;
+        }
+        if (data.content !== undefined) {
+            updateData.content = data.content;
+        }
+        if (data.category !== undefined) {
+            updateData.category = data.category;
+        }
+        if (data.tags !== undefined) {
+            updateData.tags = data.tags;
+        }
+
         // Pass UID to ensure user can only update their own entry. This logic would be inside updateJournalEntry.
-        await updateJournalEntry(entryId, userId, {
-            title: data.title,
-            content: data.content,
-        });
+        await updateJournalEntry(entryId, userId, updateData);
 
         return new NextResponse(JSON.stringify({ success: true }), { status: 200 });
 

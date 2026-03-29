@@ -42,6 +42,8 @@ export async function POST(request: Request) {
         const content = formData.get('content') as string;
         const imageFile = formData.get('picture') as File | null;
         const voiceNoteFile = formData.get('voiceNote') as File | null;
+        const category = formData.get('category') as string | null;
+        const tagsString = formData.get('tags') as string | null;
         
         if(!title || !content) {
              return new NextResponse(JSON.stringify({ error: 'Title and content are required.' }), { status: 400 });
@@ -53,11 +55,29 @@ export async function POST(request: Request) {
             userId: string;
             imageUrl?: string;
             voiceNoteUrl?: string;
+            category?: string;
+            tags?: string[];
         } = {
             title,
             content,
             userId: userId,
         };
+
+        if (category) {
+            dataToSave.category = category;
+        }
+
+        if (tagsString) {
+            try {
+                const parsedTags = JSON.parse(tagsString);
+                if (Array.isArray(parsedTags)) {
+                    dataToSave.tags = parsedTags;
+                }
+            } catch (e) {
+                // If tags is not valid JSON, ignore it
+                console.warn('Invalid tags format:', e);
+            }
+        }
 
         if (imageFile && imageFile.size > 0) {
              dataToSave.imageUrl = await uploadFileAndGetURL(imageFile, userId, 'journal-images');
@@ -69,7 +89,16 @@ export async function POST(request: Request) {
         
         const newEntryId = await addJournalEntry(dataToSave);
 
-        return new NextResponse(JSON.stringify({ success: true, id: newEntryId, title, content, voiceNoteUrl: dataToSave.voiceNoteUrl || null, imageUrl: dataToSave.imageUrl || null }), { status: 201 });
+        return new NextResponse(JSON.stringify({ 
+            success: true, 
+            id: newEntryId, 
+            title, 
+            content, 
+            voiceNoteUrl: dataToSave.voiceNoteUrl || null, 
+            imageUrl: dataToSave.imageUrl || null,
+            category: dataToSave.category || null,
+            tags: dataToSave.tags || null
+        }), { status: 201 });
 
     } catch (error) {
         console.error('Create Journal Entry Error:', error);
