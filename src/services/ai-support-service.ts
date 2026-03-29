@@ -185,3 +185,57 @@ export async function getMessagesBySession(sessionId: string): Promise<AIMessage
     throw new Error('Could not fetch messages.');
   }
 }
+
+/**
+ * Update a message's isSaved status
+ */
+export async function updateMessageSaveStatus(
+  messageId: string,
+  userId: string,
+  isSaved: boolean
+): Promise<void> {
+  try {
+    const docRef = doc(db, 'aiMessages', messageId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Unauthorized or message not found.');
+    }
+
+    await updateDoc(docRef, {
+      isSaved,
+    });
+  } catch (error) {
+    console.error("Error updating message save status: ", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all saved messages for a user ordered by creation time (newest first)
+ */
+export async function getSavedMessages(userId: string): Promise<AIMessage[]> {
+  try {
+    const q = query(
+      collection(db, 'aiMessages'),
+      where('userId', '==', userId),
+      where('isSaved', '==', true),
+      orderBy('createdAt', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const messages: AIMessage[] = [];
+
+    querySnapshot.forEach((doc) => {
+      messages.push({
+        id: doc.id,
+        ...doc.data(),
+      } as AIMessage);
+    });
+
+    return messages;
+  } catch (error) {
+    console.error("Error fetching saved messages: ", error);
+    throw new Error('Could not fetch saved messages.');
+  }
+}
