@@ -19,7 +19,10 @@ import {
  */
 export interface MessageMetadata {
   model?: string;
-  tokens?: number;
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  totalTokenCount?: number;
+  thoughtsTokenCount?: number;
 }
 
 export interface AISession {
