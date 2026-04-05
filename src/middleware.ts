@@ -3,6 +3,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// TEMPORARY: Routes allowed during maintenance period
+const allowedRoutes = ['/admin', '/login', '/logout', '/verify', '/maintenance'];
+
 const protectedRoutes = ['/dashboard', '/journal', '/memory-box', '/ai-support', '/health', '/profile', '/settings', '/logout'];
 const authRoutes = ['/login', '/register'];
 const publicRoutes = ['/verify'];
@@ -10,6 +13,13 @@ const adminRoutes = ['/admin']; // Admin routes - full role check happens in the
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // TEMPORARY MAINTENANCE MODE: Redirect all routes except allowed ones to /maintenance
+  const isAllowedRoute = allowedRoutes.some(route => pathname.startsWith(route));
+  if (!isAllowedRoute) {
+    console.log('[Middleware] Maintenance mode - redirecting to /maintenance:', pathname);
+    return NextResponse.redirect(new URL('/maintenance', request.url));
+  }
   
   // Check for Better Auth session cookie
   const sessionCookie = request.cookies.get('better-auth.session_token') || 
@@ -43,9 +53,9 @@ export function middleware(request: NextRequest) {
   }
 
   // If the user has a session and is trying to access an authentication route,
-  // redirect them to the dashboard.
+  // redirect them to maintenance (since dashboard is blocked during maintenance).
   if (sessionCookie && authRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/maintenance', request.url));
   }
   
   return NextResponse.next();
