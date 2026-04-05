@@ -49,7 +49,7 @@ export default function LoginView() {
     e.preventDefault();
     startTransition(async () => {
       try {
-        const response = await fetch('/api/auth/emailLogin', {
+        const response = await fetch('/api/auth/sign-in/email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -62,7 +62,7 @@ export default function LoginView() {
         }
 
         // Store the access token in localStorage
-        const accessToken = data.data?.access_token;
+        const accessToken = data.token;
         if (accessToken) {
           localStorage.setItem('session_token', accessToken);
         }

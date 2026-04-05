@@ -132,7 +132,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const token = localStorage.getItem('session_token');
+      await fetch('/api/auth/sign-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ token }),
+      });
     } catch (error) {
         console.error("Logout API call failed:", error);
     } finally {

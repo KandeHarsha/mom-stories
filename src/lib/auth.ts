@@ -3,7 +3,7 @@ import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { createAuthMiddleware } from "better-auth/api";
 import { dash } from "@better-auth/infra";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, admin } from "better-auth/plugins";
 import { sendPasswordResetOTP, sendVerificationOTP } from "@/services/email-service";
 
 const client = new MongoClient(process.env.MONGODB_CLUSTER_URL as string);
@@ -59,6 +59,10 @@ export const auth = betterAuth({
   },
   plugins: [
     dash(),
+    admin({
+      defaultRole: "user",
+      adminRoles: ["admin"],
+    }),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         console.log(`Sending ${type} OTP to ${email}: ${otp}`);
