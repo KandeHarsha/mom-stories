@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { NotificationSender } from '@/components/features/notification-sender';
 
 export default async function AdminDashboard() {
   // Check if user is admin
@@ -27,7 +28,7 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-blue-50 rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-2">User Management</h3>
           <p className="text-sm text-gray-600 mb-4">
@@ -41,31 +42,7 @@ export default async function AdminDashboard() {
           </a>
         </div>
 
-        <div className="bg-green-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-2">Roles & Permissions</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Configure user roles and permissions
-          </p>
-          <a 
-            href="/admin/roles" 
-            className="text-green-600 hover:text-green-800 font-medium"
-          >
-            Manage Roles →
-          </a>
-        </div>
-
-        <div className="bg-purple-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-2">Settings</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Configure application settings
-          </p>
-          <a 
-            href="/admin/settings" 
-            className="text-purple-600 hover:text-purple-800 font-medium"
-          >
-            View Settings →
-          </a>
-        </div>
+        <NotificationSender />
       </div>
     </div>
   );
