@@ -1,12 +1,9 @@
-'use client';
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Smartphone, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-
 
 export default async function MaintenancePage() {
   const session = await auth.api.getSession({
