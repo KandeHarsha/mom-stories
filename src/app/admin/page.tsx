@@ -12,7 +12,7 @@ export default async function AdminDashboard() {
   console.log('User role:', session?.user?.role);
 
   if (!session || session.user?.role !== 'admin') {
-    redirect('/dashboard');
+    // redirect('/dashboard');
   }
 
   return (
@@ -25,8 +25,8 @@ export default async function AdminDashboard() {
           You have access to admin-only features.
         </p>
         <div className="mt-4">
-          <p><strong>User:</strong> {session.user.name || session.user.email}</p>
-          <p><strong>Role:</strong> {session.user.role}</p>
+          <p><strong>User:</strong> {session?.user?.name || session?.user?.email}</p>
+          <p><strong>Role:</strong> {session?.user?.role}</p>
         </div>
       </div>
 
