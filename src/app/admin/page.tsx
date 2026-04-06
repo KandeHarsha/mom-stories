@@ -8,6 +8,8 @@ export default async function AdminDashboard() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+  console.log('Session:', session);
+  console.log('User role:', session?.user?.role);
 
   if (!session || session.user?.role !== 'admin') {
     redirect('/dashboard');
