@@ -22,8 +22,10 @@ export function middleware(request: NextRequest) {
   }
   
   // Check for Better Auth session cookie
-  const sessionCookie = request.cookies.get('better-auth.session_token') || 
-                        request.cookies.get('session');
+  const sessionCookie = 
+  request.cookies.get('__Secure-better-auth.session_token') || // production
+  request.cookies.get('better-auth.session_token') ||          // local
+  request.cookies.get('session');
 
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
