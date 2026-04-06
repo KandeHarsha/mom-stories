@@ -4,8 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Smartphone, Heart } from 'lucide-react';
 import Link from 'next/link';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
-export default function MaintenancePage() {
+
+export default async function MaintenancePage() {
+  const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    console.log('Session:', session);
+    console.log('User role:', session?.user?.role);
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 p-4">
       <Card className="max-w-lg w-full shadow-xl">
