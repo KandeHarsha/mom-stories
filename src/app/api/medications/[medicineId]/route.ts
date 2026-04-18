@@ -1,7 +1,7 @@
 // src/app/api/medications/[medicineId]/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getMedicationById, updateMedication, deleteMedication, isValidMedicationType, VALID_MEDICATION_TYPES } from '@/services/medication-service';
+import { getMedicationById, updateMedication, deleteMedication, isValidMedicationType, VALID_MEDICATION_TYPES, isValidFrequency, VALID_FREQUENCIES } from '@/services/medication-service';
 
 // GET: Retrieve a single medication by ID
 export async function GET(
@@ -68,7 +68,7 @@ export async function PUT(
         }
 
         const body = await request.json();
-        const { title, frequency, dosage, type } = body;
+        const { title, frequency, dosage, type, reminderTime, weekday, notificationId } = body;
 
         // Validate type if provided
         if (type !== undefined && !isValidMedicationType(type)) {
@@ -77,16 +77,53 @@ export async function PUT(
             }, { status: 400 });
         }
 
+        // Validate frequency if provided
+        if (frequency !== undefined && !isValidFrequency(frequency)) {
+            return NextResponse.json({
+                error: `Invalid frequency. Must be one of: ${VALID_FREQUENCIES.join(', ')}`,
+            }, { status: 400 });
+        }
+
         // Validate title if provided (cannot be empty string)
         if (title !== undefined && (typeof title !== 'string' || title.trim() === '')) {
             return NextResponse.json({ error: 'Title cannot be empty.' }, { status: 400 });
         }
 
-        const updateData: Record<string, string> = {};
+        // Validate reminderTime if provided
+        if (reminderTime !== undefined) {
+            const { hour, minute } = reminderTime ?? {};
+            if (
+                typeof hour !== 'number' || !Number.isInteger(hour) || hour < 0 || hour > 23 ||
+                typeof minute !== 'number' || !Number.isInteger(minute) || minute < 0 || minute > 59
+            ) {
+                return NextResponse.json({
+                    error: 'Invalid reminderTime. hour must be 0–23 and minute must be 0–59.',
+                }, { status: 400 });
+            }
+        }
+
+        // Validate weekday if provided
+        if (weekday !== undefined) {
+            if (typeof weekday !== 'number' || !Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+                return NextResponse.json({
+                    error: 'Invalid weekday. Must be an integer 0 (Sun) – 6 (Sat).',
+                }, { status: 400 });
+            }
+        }
+
+        // Validate notificationId if provided
+        if (notificationId !== undefined && (typeof notificationId !== 'string' || notificationId.trim() === '')) {
+            return NextResponse.json({ error: 'notificationId must be a non-empty string.' }, { status: 400 });
+        }
+
+        const updateData: Record<string, unknown> = {};
         if (title !== undefined) updateData.title = title.trim();
         if (frequency !== undefined) updateData.frequency = frequency;
         if (dosage !== undefined) updateData.dosage = dosage;
         if (type !== undefined) updateData.type = type;
+        if (reminderTime !== undefined) updateData.reminderTime = reminderTime;
+        if (weekday !== undefined) updateData.weekday = weekday;
+        if (notificationId !== undefined) updateData.notificationId = notificationId;
 
         await updateMedication(medicineId, userId, updateData);
 
