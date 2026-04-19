@@ -78,9 +78,9 @@ export async function POST(request: Request) {
 
         // Validate weekday if provided
         if (weekday !== undefined) {
-            if (typeof weekday !== 'number' || !Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+            if (typeof weekday !== 'number' || !Number.isInteger(weekday) || weekday < 1 || weekday > 7) {
                 return NextResponse.json({
-                    error: 'Invalid weekday. Must be an integer 0 (Sun) – 6 (Sat).',
+                    error: 'Invalid weekday. Must be an integer 1 (Sun) - 7 (Sat).',
                 }, { status: 400 });
             }
         }
