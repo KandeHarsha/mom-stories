@@ -1,6 +1,6 @@
 // src/app/api/appointment/route.ts
 import { NextResponse } from 'next/server';
-import { getAppointments, addAppointment } from '@/services/appointment-service';
+import { getAppointments, addAppointment, type AppointmentType } from '@/services/appointment-service';
 import { auth } from "@/lib/auth";
 
 // Get all appointments
@@ -36,20 +36,35 @@ export async function POST(request: Request) {
 
         const userId = session.user.id;
         const body = await request.json();
-        const { date, doctor } = body;
+        const { date, doctor, type, fastingRequired } = body;
 
         if (!date) {
             return new NextResponse(JSON.stringify({ error: 'Date is required.' }), { status: 400 });
         }
 
+        const validTypes = ['doctor', 'lab', 'physiotherapy', 'dietitian', 'mental_wellness'];
+        if (type && !validTypes.includes(type)) {
+            return new NextResponse(JSON.stringify({ error: `Invalid type. Must be one of: ${validTypes.join(', ')}.` }), { status: 400 });
+        }
+
         const dataToSave: {
             userId: string;
             date: string;
+            type?: AppointmentType;
+            fastingRequired?: boolean;
             doctor?: string;
         } = {
             userId,
             date,
         };
+
+        if (type) {
+            dataToSave.type = type as AppointmentType;
+        }
+
+        if (fastingRequired !== undefined) {
+            dataToSave.fastingRequired = Boolean(fastingRequired);
+        }
 
         if (doctor) {
             dataToSave.doctor = doctor;

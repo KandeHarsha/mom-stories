@@ -2,13 +2,26 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, Timestamp, doc, updateDoc, where, getDoc } from 'firebase/firestore';
 
+export type AppointmentType = 'doctor' | 'lab' | 'physiotherapy' | 'dietitian' | 'mental_wellness';
+
 export interface Appointment {
     id: string;
     userId: string;
     date: string; // ISO date string
+    type?: AppointmentType;
+    fastingRequired?: boolean;
     doctor?: string;
-    doctorNotes?: string;
-    medications?: string;
+    notes?: string;
+    medications?: string[];
+    followUp?: string; // ISO date string for follow-up appointment
+    documents?: string[]; // Array of document URLs
+    exercises?: string[];
+    painScore?: number; // 0-10
+    dietPlan?: string;
+    isFollowUp?: boolean;
+    parentAppointmentId?: string; // Reference to parent appointment if this is a follow-up
+    isCancelled?: boolean;
+    isRescheduled?: boolean;
     createdAt: any; // Can be Timestamp on read, FieldValue on write
     updatedAt?: any;
 }
@@ -17,7 +30,7 @@ export interface AppointmentData extends Omit<Appointment, 'id' | 'createdAt'> {
     createdAt: Timestamp;
 }
 
-export async function addAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'doctorNotes' | 'medications'>) {
+export async function addAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'medications' | 'followUp' | 'documents' | 'exercises' | 'painScore' | 'dietPlan'>) {
     try {
         const docRef = await addDoc(collection(db, 'appointments'), {
             ...appointment,
@@ -30,7 +43,7 @@ export async function addAppointment(appointment: Omit<Appointment, 'id' | 'crea
     }
 }
 
-export async function updateAppointment(appointmentId: string, userId: string, data: Partial<Pick<Appointment, 'doctorNotes' | 'medications'>>): Promise<void> {
+export async function updateAppointment(appointmentId: string, userId: string, data: Partial<Pick<Appointment, 'notes' | 'medications' | 'followUp' | 'documents' | 'exercises' | 'painScore' | 'dietPlan' | 'isCancelled' | 'isRescheduled'>>): Promise<void> {
     try {
         const docRef = doc(db, 'appointments', appointmentId);
         const docSnap = await getDoc(docRef);
