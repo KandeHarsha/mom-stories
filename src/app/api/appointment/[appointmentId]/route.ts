@@ -35,6 +35,7 @@ export async function PUT(request: Request, { params }: { params: { appointmentI
         const dietPlan = formData.get('dietPlan') as string | null;
         const isCancelledStr = formData.get('isCancelled') as string | null;
         const isRescheduledStr = formData.get('isRescheduled') as string | null;
+        const fastingRequiredStr = formData.get('fastingRequired') as string | null;
 
         const updateData: {
             notes?: string;
@@ -46,6 +47,7 @@ export async function PUT(request: Request, { params }: { params: { appointmentI
             documents?: string[];
             isCancelled?: boolean;
             isRescheduled?: boolean;
+            fastingRequired?: boolean;
         } = {};
         
         // Handle notes
@@ -107,6 +109,10 @@ export async function PUT(request: Request, { params }: { params: { appointmentI
         
         if (isRescheduledStr !== null) {
             updateData.isRescheduled = isRescheduledStr === 'true';
+        }
+        
+        if (fastingRequiredStr !== null) {
+            updateData.fastingRequired = fastingRequiredStr === 'true';
         }
         
         // Handle document file uploads
