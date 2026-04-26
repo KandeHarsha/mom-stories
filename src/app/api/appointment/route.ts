@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
         const userId = session.user.id;
         const body = await request.json();
-        const { date, doctor, type, fastingRequired } = body;
+        const { date, doctor, type, fastingRequired, tests } = body;
 
         if (!date) {
             return new NextResponse(JSON.stringify({ error: 'Date is required.' }), { status: 400 });
@@ -47,12 +47,18 @@ export async function POST(request: Request) {
             return new NextResponse(JSON.stringify({ error: `Invalid type. Must be one of: ${validTypes.join(', ')}.` }), { status: 400 });
         }
 
+        // Validate tests array if provided
+        if (tests !== undefined && (!Array.isArray(tests) || !tests.every(test => typeof test === 'string'))) {
+            return new NextResponse(JSON.stringify({ error: 'tests must be an array of strings.' }), { status: 400 });
+        }
+
         const dataToSave: {
             userId: string;
             date: string;
             type?: AppointmentType;
             fastingRequired?: boolean;
             doctor?: string;
+            tests?: string[];
         } = {
             userId,
             date,
@@ -68,6 +74,10 @@ export async function POST(request: Request) {
 
         if (doctor) {
             dataToSave.doctor = doctor;
+        }
+
+        if (tests && tests.length > 0) {
+            dataToSave.tests = tests;
         }
 
         const newAppointmentId = await addAppointment(dataToSave);

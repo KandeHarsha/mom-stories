@@ -37,6 +37,7 @@ export async function PUT(request: Request, { params }: { params: { appointmentI
         const isRescheduledStr = formData.get('isRescheduled') as string | null;
         const fastingRequiredStr = formData.get('fastingRequired') as string | null;
         const date = formData.get('date') as string | null;
+        const testsJson = formData.get('tests') as string | null;
 
         const updateData: {
             notes?: string;
@@ -50,6 +51,7 @@ export async function PUT(request: Request, { params }: { params: { appointmentI
             isRescheduled?: boolean;
             fastingRequired?: boolean;
             date?: string;
+            tests?: string[];
         } = {};
         
         // Handle notes
@@ -82,6 +84,20 @@ export async function PUT(request: Request, { params }: { params: { appointmentI
                 }
             } catch {
                 return new NextResponse(JSON.stringify({ error: 'Invalid exercises JSON format.' }), { status: 400 });
+            }
+        }
+        
+        // Handle tests array
+        if (testsJson !== null) {
+            try {
+                const tests = JSON.parse(testsJson);
+                if (Array.isArray(tests) && tests.every(test => typeof test === 'string')) {
+                    updateData.tests = tests;
+                } else {
+                    return new NextResponse(JSON.stringify({ error: 'tests must be an array of strings.' }), { status: 400 });
+                }
+            } catch {
+                return new NextResponse(JSON.stringify({ error: 'Invalid tests JSON format.' }), { status: 400 });
             }
         }
         
