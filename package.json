@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/expo": "^1.5.3",
     "@better-auth/infra": "^0.1.8",
     "@better-auth/mongo-adapter": "^1.5.3",
     "@google/genai": "^1.43.0",

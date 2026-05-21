@@ -3,6 +3,7 @@ import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { createAuthMiddleware } from "better-auth/api";
 import { dash } from "@better-auth/infra";
+import { expo } from "@better-auth/expo";
 import { emailOTP, admin } from "better-auth/plugins";
 import { sendPasswordResetOTP, sendVerificationOTP } from "@/services/email-service";
 
@@ -13,7 +14,12 @@ const db = client.db();
 export const auth = betterAuth({
   appName: "Mom Stories",
   baseURL: process.env.BETTER_AUTH_URL,
-  trustedOrigins: [process.env.BETTER_AUTH_URL as string],
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL as string,
+    "momstoriesmobile://",
+    "momstoriesmobile-dev://",
+    "exp://*",
+  ],
   database: mongodbAdapter(db, {
     client
   }),
@@ -24,7 +30,12 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      // Better Auth runtime accepts a client ID array for native + web, but current typings are string-only.
+      clientId: [
+        process.env.GOOGLE_WEB_CLIENT_ID,
+        process.env.GOOGLE_IOS_CLIENT_ID,
+        process.env.GOOGLE_ANDROID_CLIENT_ID,
+      ].filter((id): id is string => Boolean(id)) as unknown as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }
   },
@@ -59,6 +70,7 @@ export const auth = betterAuth({
   },
   plugins: [
     dash(),
+    expo(),
     admin({
       defaultRole: "user",
       adminRoles: ["admin"],
