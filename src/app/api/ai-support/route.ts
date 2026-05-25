@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     // Case 1: No sessionId provided - create new session
     if (!sessionId) {
       // Get AI response with empty history
-      const aiResponse = await aiPoweredSupport(question, []);
+      const aiResponse = await aiPoweredSupport(question, userId, []);
 
       // Generate title from first 50 characters of question
       const title = question.length > 50 ? question.substring(0, 50) + '...' : question;
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       }));
 
     // Get AI response with conversation history
-    const aiResponse = await aiPoweredSupport(question, conversationHistory);
+    const aiResponse = await aiPoweredSupport(question, userId, conversationHistory);
 
     // Update session timestamp
     await updateSession(sessionId);

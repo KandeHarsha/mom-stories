@@ -6,6 +6,9 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
+import type * as GenAITypes from "@google/genai";
+import { getAppointments } from '@/services/appointment-service';
+import { getMedications } from '@/services/medication-service';
 
 // Initialize the Gemini Client
 const apiKey = process.env.GEMINI_API_KEY;
@@ -19,11 +22,38 @@ export interface ConversationHistory {
   parts: { text: string }[];
 }
 
+/**
+ * Function declaration for getting user's appointments
+ */
+const getAppointmentsFunctionDeclaration = {
+  name: "getAppointments",
+  description: "Retrieves the user's scheduled appointments including type (doctor, lab, physiotherapy, etc.), date, doctor name, and any notes. Use this when the conversation involves appointments, upcoming visits, or medical schedules.",
+  parameters: {
+    type: "OBJECT" as const,
+    properties: {},
+    required: [],
+  },
+};
+
+/**
+ * Function declaration for getting user's medications
+ */
+const getMedicationsFunctionDeclaration = {
+  name: "getMedications",
+  description: "Retrieves the user's medication list including medication name, dosage, frequency (daily/weekly), type (tablet/tonic/powder/drops), and reminder times. Use this when she mentions medications, asks about her medicine schedule, or discusses what she's currently taking.",
+  parameters: {
+    type: "OBJECT" as const,
+    properties: {},
+    required: [],
+  },
+};
 
 /**
  * System Instruction: This defines Mira's personality and boundaries.
  */
 const SYSTEM_INSTRUCTION = `You are Mira — not a bot, not a helpline. You're that one person she can text at 11pm without feeling like a burden. The friend who gets it without needing the full backstory. Warm, real, and completely in her corner.
+
+You have access to her appointment and medication information when relevant. Use it naturally to provide helpful context, reminders, or support — but never force it into every conversation.
 
 ## Who You Are
 
@@ -118,61 +148,214 @@ Always finish your thoughts completely. Never leave a sentence hanging.
 She came here to feel less alone — make sure she does.`;
 
 /**
+ * Helper function to extract function calls from response
+ */
+function extractFunctionCall(response: any) {
+  const parts = response.candidates?.[0]?.content?.parts;
+  
+  if (!parts) {
+    return null;
+  }
+  
+  const functionCalls = parts.filter((part: any) => part.functionCall);
+  const functionCall = functionCalls && functionCalls.length > 0 ? functionCalls[0].functionCall : null;
+  
+  return functionCall;
+}
+
+/**
+ * Helper function to execute the requested function
+ */
+async function executeFunctionCall(functionCall: any, userId: string) {
+  if (functionCall.name === "getAppointments") {
+    const appointments = await getAppointments(userId);
+    return { appointments };
+  }
+  
+  if (functionCall.name === "getMedications") {
+    const medications = await getMedications(userId);
+    return { medications };
+  }
+  
+  return null;
+}
+
+/**
+ * Helper function to build response object
+ */
+function buildResponseObject(response: any) {
+  const responseText = response.text?.trim() || '';
+  
+  const result: any = {
+    response: responseText,
+    model: response.modelVersion,
+    promptTokenCount: response.usageMetadata?.promptTokenCount || 0,
+    candidatesTokenCount: response.usageMetadata?.candidatesTokenCount || 0,
+    totalTokenCount: response.usageMetadata?.totalTokenCount || 0,
+  };
+  
+  // Only include thoughtsTokenCount if it exists and is not undefined
+  if (response.usageMetadata?.thoughtsTokenCount !== undefined) {
+    result.thoughtsTokenCount = response.usageMetadata.thoughtsTokenCount;
+  }
+  
+  return result;
+}
+
+/**
  * Main function to handle 2-way AI support
  * @param userInput - The latest message from the mother
+ * @param userId - The user's ID for fetching appointments
  * @param history - The previous messages in the conversation
  */
-export async function aiPoweredSupport(userInput: string, history: ConversationHistory[] = []) {
+export async function aiPoweredSupport(
+  userInput: string, 
+  userId: string,
+  history: ConversationHistory[] = []
+) {
   try {
-    const model = "gemini-2.5-flash";
+    // Using Gemini 3.5 Flash for better function calling support with proper IDs
+    const model = "gemini-3.5-flash";
+
+    // Get current timestamp for context
+    const now = new Date();
+    const currentDateTime = now.toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata' // Indian timezone
+    });
+
+    // Add timestamp context to system instruction
+    const contextualizedInstruction = `${SYSTEM_INSTRUCTION}
+
+## Current Context
+
+**Current Date & Time:** ${currentDateTime} (India Time)
+
+Use this when discussing appointments, schedules, or time-sensitive information. When she mentions "today", "tomorrow", "next week", or asks about upcoming appointments, reference this current timestamp.`;
+
+    // Configure tools and settings
+    const config: any = {
+      systemInstruction: contextualizedInstruction,
+      temperature: 0.78,
+      tools: [{
+        functionDeclarations: [
+          getAppointmentsFunctionDeclaration,
+          getMedicationsFunctionDeclaration
+        ]
+      }],
+    };
 
     // If no history, use generateContent for first message
     if (history.length === 0) {
       const response = await client.models.generateContent({
         model: model,
         contents: userInput,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          temperature: 0.78,
-        },
+        config: config,
       });
 
-      const responseText = response.text?.trim() || '';
+      // Check if the model wants to call a function
+      const functionCall = extractFunctionCall(response);
 
-      return {
-        response: responseText,
-        model: response.modelVersion,
-        promptTokenCount: response.usageMetadata?.promptTokenCount,
-        candidatesTokenCount: response.usageMetadata?.candidatesTokenCount,
-        totalTokenCount: response.usageMetadata?.totalTokenCount,
-        thoughtsTokenCount: response.usageMetadata?.thoughtsTokenCount,
-      };
+      if (functionCall) {
+        // Execute the function
+        const functionResult = await executeFunctionCall(functionCall, userId);
+
+        // Build the contents array for the second request
+        const contents = [
+          {
+            role: "user" as const,
+            parts: [{ text: userInput }],
+          },
+          response.candidates![0].content!,
+          {
+            role: "user" as const,
+            parts: [{
+              functionResponse: {
+                name: functionCall.name,
+                response: { result: functionResult },
+                // Include id only if it exists
+                ...(functionCall.id && { id: functionCall.id }),
+              },
+            }],
+          },
+        ];
+
+        // Get final response with function results
+        const finalResponse = await client.models.generateContent({
+          model: model,
+          contents: contents,
+          config: config,
+        });
+
+        return buildResponseObject(finalResponse);
+      }
+
+      return buildResponseObject(response);
     }
 
     // For multi-turn conversations, create a chat session
     const chat = client.chats.create({
       model: model,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.78,
-      },
+      config: config,
       history: history,
     });
     
-    
     // Send the new message
     const response = await chat.sendMessage({ message: userInput });
-    console.log("Response",response);
-    const responseText = response.text?.trim() || '';
     
-    return {
-      response: responseText,
-      model: response.modelVersion,
-      promptTokenCount: response.usageMetadata?.promptTokenCount,
-      candidatesTokenCount: response.usageMetadata?.candidatesTokenCount,
-      totalTokenCount: response.usageMetadata?.totalTokenCount,
-      thoughtsTokenCount: response.usageMetadata?.thoughtsTokenCount,
-    };
+    // Check if the model wants to call a function
+    const functionCall = extractFunctionCall(response);
+
+    if (functionCall) {
+      // Execute the function
+      const functionResult = await executeFunctionCall(functionCall, userId);
+
+      // Build updated history with function call and response
+      const updatedHistory = [
+        ...history,
+        {
+          role: "user" as const,
+          parts: [{ text: userInput }],
+        },
+        {
+          role: "model" as const,
+          parts: [{ functionCall: functionCall }],
+        },
+        {
+          role: "user" as const,
+          parts: [{
+            functionResponse: {
+              name: functionCall.name,
+              response: { result: functionResult },
+              // Include id only if it exists
+              ...(functionCall.id && { id: functionCall.id }),
+            },
+          }],
+        },
+      ];
+
+      // Create a new chat with updated history
+      const newChat = client.chats.create({
+        model: model,
+        config: config,
+        history: updatedHistory,
+      });
+
+      // Request the final response
+      const finalResponse = await newChat.sendMessage({ 
+        message: ""  // Empty message to get the response based on function result
+      });
+
+      return buildResponseObject(finalResponse);
+    }
+
+    return buildResponseObject(response);
 
   } catch (error) {
     console.error("AI Support Error:", error);

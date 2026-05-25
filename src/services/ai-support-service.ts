@@ -117,12 +117,18 @@ export async function createMessage(
   metadata?: MessageMetadata
 ): Promise<string> {
   try {
+    // Filter out undefined values from metadata to avoid Firebase errors
+    const cleanMetadata = metadata ? 
+      Object.fromEntries(
+        Object.entries(metadata).filter(([_, value]) => value !== undefined)
+      ) : {};
+    
     const docRef = await addDoc(collection(db, 'aiMessages'), {
       sessionId,
       userId,
       content,
       role,
-      metadata: metadata || {},
+      metadata: cleanMetadata,
       isSaved: false,
       createdAt: serverTimestamp(),
     });
