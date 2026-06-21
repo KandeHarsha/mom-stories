@@ -48,6 +48,10 @@ export const auth = betterAuth({
       childrenIds: {
         type: "string[]",
         required: false,
+      },
+      pregnancyId: {
+        type: "string",
+        required: false,
       }
     }
   },
