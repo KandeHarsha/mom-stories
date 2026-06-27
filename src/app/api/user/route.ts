@@ -33,9 +33,33 @@ export async function PATCH(req: Request) {
         { status: 400 }
       );
   }
+
+  // Validate that only allowed fields are being updated
+  const allowedFields = ['name', 'phase'];
+  const updateData: Record<string, any> = {};
+
+  for (const key of Object.keys(data)) {
+    if (allowedFields.includes(key)) {
+      updateData[key] = data[key];
+    } else if (key === 'pregnancyId') {
+      // pregnancyId can only be set to null
+      if (data[key] !== null) {
+        return Response.json(
+          { error: "pregnancyId cannot be updated" },
+          { status: 400 }
+        );
+      }
+      updateData[key] = null;
+    } else {
+      return Response.json(
+        { error: `Field '${key}' cannot be updated` },
+        { status: 400 }
+      );
+    }
+  }
   
   const updatedUser = await auth.api.updateUser({
-    body: data,
+    body: updateData,
     headers: req.headers
   });
 
