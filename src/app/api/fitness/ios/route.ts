@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import {
+    DEFAULT_STEP_GOAL,
     getFitnessHistory,
     getStepGoal,
     isValidFitnessDataPoint,
@@ -33,10 +34,23 @@ export async function GET(request: Request) {
             ? Math.min(daysParam, MAX_DAYS)
             : DEFAULT_DAYS;
 
-        const [data, stepGoal] = await Promise.all([
+        // Fetch independently: the history query needs a composite Firestore
+        // index that may not exist yet on a fresh collection, but the step
+        // goal is a plain doc read and should never be blocked by that.
+        const [historyResult, stepGoalResult] = await Promise.allSettled([
             getFitnessHistory(userId, days),
             getStepGoal(userId),
         ]);
+
+        if (historyResult.status === 'rejected') {
+            console.error('Get Fitness History Error:', historyResult.reason);
+        }
+        if (stepGoalResult.status === 'rejected') {
+            console.error('Get Step Goal Error:', stepGoalResult.reason);
+        }
+
+        const data = historyResult.status === 'fulfilled' ? historyResult.value : [];
+        const stepGoal = stepGoalResult.status === 'fulfilled' ? stepGoalResult.value : DEFAULT_STEP_GOAL;
 
         return NextResponse.json({ data, stepGoal }, { status: 200 });
     } catch (error) {
