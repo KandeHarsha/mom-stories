@@ -1,7 +1,7 @@
-// src/app/api/fitness/ios/route.ts
-// Mirrors /api/fitness/android — same Firestore collections (`fitnessData`
-// and `userProfiles` via fitness-service.ts), just a distinct endpoint for
-// the iOS/HealthKit client.
+// src/app/api/fitness/android/route.ts
+// Mirrors /api/fitness/ios — same Firestore collections (`fitnessData` and
+// `userProfiles` via fitness-service.ts), just a distinct endpoint for the
+// Android/Health Connect client.
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import {
@@ -18,7 +18,7 @@ import {
 const DEFAULT_DAYS = 7;
 const MAX_DAYS = 31;
 
-// GET /api/fitness/ios?days=7 — fetch fitness history and step goal for the authenticated user (iOS/HealthKit only)
+// GET /api/fitness/android?days=7 — fetch fitness history and step goal for the authenticated user (Android/Health Connect)
 export async function GET(request: Request) {
     try {
         const session = await auth.api.getSession({
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     }
 }
 
-// POST /api/fitness/ios — sync HealthKit fitness data points for the authenticated user (iOS only)
+// POST /api/fitness/android — sync Health Connect fitness data points for the authenticated user (Android only)
 export async function POST(request: Request) {
     try {
         const session = await auth.api.getSession({
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     }
 }
 
-// PUT /api/fitness/ios — update the authenticated user's daily step goal
+// PUT /api/fitness/android — update the authenticated user's daily step goal
 export async function PUT(request: Request) {
     try {
         const session = await auth.api.getSession({
