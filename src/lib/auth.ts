@@ -5,7 +5,8 @@ import { createAuthMiddleware } from "better-auth/api";
 import { dash } from "@better-auth/infra";
 import { expo } from "@better-auth/expo";
 import { emailOTP, admin } from "better-auth/plugins";
-import { sendPasswordResetOTP, sendVerificationOTP } from "@/services/email-service";
+import { sendPasswordResetOTP, sendVerificationOTP, sendDeleteAccountEmail } from "@/services/email-service";
+import { purgeUserData } from "@/services/account-deletion-service";
 
 const client = new MongoClient(process.env.MONGODB_CLUSTER_URL as string);
 const db = client.db();
@@ -53,7 +54,17 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       }
-    }
+    },
+    deleteUser: {
+      enabled: true,
+      sendDeleteAccountVerification: async ({ user, token }) => {
+        const confirmUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/delete-account/confirm?token=${token}`;
+        await sendDeleteAccountEmail(user.email, confirmUrl);
+      },
+      beforeDelete: async (user) => {
+        await purgeUserData(user.id);
+      },
+    },
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
