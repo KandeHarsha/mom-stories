@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // TEMPORARY: Routes allowed during maintenance period
-const allowedRoutes = ['/admin', '/login', '/logout', '/verify', '/maintenance'];
+const allowedRoutes = ['/admin', '/login', '/logout', '/verify', '/maintenance', '/delete-account'];
 
 const protectedRoutes = ['/dashboard', '/journal', '/memory-box', '/ai-support', '/health', '/profile', '/settings', '/logout'];
 const authRoutes = ['/login', '/register'];
