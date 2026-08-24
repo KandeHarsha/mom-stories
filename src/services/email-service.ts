@@ -3,6 +3,7 @@ import { getPasswordResetTemplate } from '../htmlTemplates/password-reset';
 import { getVerificationTemplate } from '../htmlTemplates/verification';
 import { getPasswordResetOtpTemplate } from '../htmlTemplates/password-reset-otp';
 import { getVerificationOtpTemplate } from '../htmlTemplates/verification-otp';
+import { getDeleteAccountTemplate } from '../htmlTemplates/delete-account';
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
@@ -69,5 +70,11 @@ export async function sendPasswordResetOTP(email: string, otp: string, expiryMin
 export async function sendVerificationOTP(email: string, otp: string, expiryMinutes: number = 10) {
   const subject = 'Verify Your Email - OTP Code';
   const { html, text } = getVerificationOtpTemplate({ otp, expiryMinutes });
+  return sendEmail({ to: email, subject, html, text });
+}
+
+export async function sendDeleteAccountEmail(email: string, confirmUrl: string) {
+  const subject = 'Confirm Account Deletion - Mom Stories';
+  const { html, text } = getDeleteAccountTemplate({ confirmUrl });
   return sendEmail({ to: email, subject, html, text });
 }
