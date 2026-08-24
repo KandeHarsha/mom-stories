@@ -73,7 +73,8 @@ export default function LoginView() {
         });
 
         // Hard refresh to re-evaluate middleware and root layout
-        window.location.href = '/dashboard';
+        const callbackUrl = searchParams.get('callbackUrl');
+        window.location.href = callbackUrl && callbackUrl.startsWith('/') ? callbackUrl : '/dashboard';
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({
