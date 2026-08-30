@@ -55,8 +55,17 @@ export function middleware(request: NextRequest) {
   }
 
   // If the user has a session and is trying to access an authentication route,
-  // redirect them to maintenance (since dashboard is blocked during maintenance).
+  // honor a callbackUrl pointing at an allowed route (e.g. /delete-account),
+  // otherwise redirect to maintenance (since dashboard is blocked during maintenance).
   if (sessionCookie && authRoutes.includes(pathname)) {
+    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl');
+    if (
+      callbackUrl &&
+      callbackUrl.startsWith('/') &&
+      allowedRoutes.some(route => callbackUrl.startsWith(route))
+    ) {
+      return NextResponse.redirect(new URL(callbackUrl, request.url));
+    }
     return NextResponse.redirect(new URL('/maintenance', request.url));
   }
   

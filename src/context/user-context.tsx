@@ -150,7 +150,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const isLoggedIn = !!user;
   const authRoutes = ['/login', '/register'];
-  const publicRoutes = ['/verify'];
+  const publicRoutes = ['/verify', '/delete-account'];
   const isAuthRoute = authRoutes.includes(pathname);
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
