@@ -1,7 +1,6 @@
 // src/app/api/vaccinations/route.ts
 import { NextResponse } from 'next/server';
 import { getVaccinations } from '@/services/vaccination-service';
-import { getUserProfile } from '@/services/auth-service';
 import { auth } from '@/lib/auth';
 
 // Get all vaccinations for a user

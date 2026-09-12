@@ -82,13 +82,6 @@ export default function DashboardView() {
             buttonText="Add"
             buttonIcon={PlusCircle}
           />
-          <FeatureCard
-            title="Memory Box"
-            description="Securely store precious photos, letters, and keepsakes."
-            onClick={() => router.push('/memory-box?action=add')}
-            buttonText="Add"
-            buttonIcon={PlusCircle}
-          />
            <FeatureCard
             title="Health Tracker"
             description="Track milestones for you and your child."

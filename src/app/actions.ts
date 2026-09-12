@@ -8,12 +8,7 @@ import { updateJournalEntry } from '@/ai/flows/update-journal-entry';
 import { deleteJournalEntry } from '@/ai/flows/delete-journal-entry';
 import { uploadFileAndGetURL, getJournalEntries } from '@/services/journal-service';
 import { getUserProfile as getDbProfile, updateUserProfile as updateUserDbProfile } from '@/services/user-service';
-import { updateUserProfile as updateAuthProfile } from '@/services/auth-service';
 import { z } from 'zod';
-import { saveMemory } from '@/ai/flows/save-memory';
-import { deleteMemory } from '@/ai/flows/delete-memory';
-import { getMemories } from '@/ai/flows/get-memories';
-import { type Memory } from '@/services/memory-service';
 
 const promptSchema = z.object({
   stageOfMotherhood: z.string().min(1, 'Stage of motherhood is required.'),
@@ -141,19 +136,17 @@ const profileUpdateSchema = z.object({
     name: z.string().min(1, 'Name cannot be empty.'),
     phase: z.string().min(1, 'Phase cannot be empty'),
     userId: z.string().min(1, 'User ID is required.'),
-    token: z.string().min(1, 'Token is required.'),
 });
 
-export async function updateUserProfileAction(data: {name: string, phase: string, userId: string, token: string}) {
+export async function updateUserProfileAction(data: {name: string, phase: string, userId: string}) {
     const validatedData = profileUpdateSchema.safeParse(data);
      if (!validatedData.success) {
         return { error: validatedData.error.errors.map(e => e.message).join(', ') };
     }
-    const { userId, name, phase, token } = validatedData.data;
+    const { userId, name, phase } = validatedData.data;
 
     try {
         await updateUserDbProfile(userId, { name, phase: phase as any });
-        await updateAuthProfile(token, {name, phase});
 
         return { success: true };
     } catch(e) {

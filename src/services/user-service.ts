@@ -10,7 +10,6 @@ export interface UserProfile {
     phase?: 'preparation' | 'pregnancy' | 'fourth_trimester' | 'beyond' | '';
     updatedAt: any;
     createdAt: any;
-    // From LoginRadius
     Uid: string;
     FirstName?: string;
     Email: { Type: string, Value: string }[];

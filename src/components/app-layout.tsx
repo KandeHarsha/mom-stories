@@ -9,7 +9,6 @@ import {
   BookHeart,
   HeartHandshake,
   LayoutDashboard,
-  Box,
   PanelLeft,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -25,7 +24,6 @@ interface AppLayoutProps {
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/journal', label: 'Private Journal', icon: BookHeart },
-  { href: '/memory-box', label: 'Memory Box', icon: Box },
   { href: '/ai-support', label: 'Gentle AI Support', icon: HeartHandshake },
   { href: '/health', label: 'Health Tracker', icon: Baby },
 ];

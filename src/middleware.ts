@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server';
 // TEMPORARY: Routes allowed during maintenance period
 const allowedRoutes = ['/admin', '/login', '/logout', '/verify', '/maintenance', '/delete-account'];
 
-const protectedRoutes = ['/dashboard', '/journal', '/memory-box', '/ai-support', '/health', '/profile', '/settings', '/logout'];
+const protectedRoutes = ['/dashboard', '/journal', '/ai-support', '/health', '/profile', '/settings', '/logout'];
 const authRoutes = ['/login', '/register'];
 const publicRoutes = ['/verify'];
 const adminRoutes = ['/admin']; // Admin routes - full role check happens in the page
