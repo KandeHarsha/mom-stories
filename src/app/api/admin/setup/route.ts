@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const { MongoClient } = require('mongodb');
     const client = new MongoClient(process.env.MONGODB_CLUSTER_URL as string);
     await client.connect();
-    const db = client.db();
+    const db = client.db(process.env.ENV === 'production' ? 'mom-stories-prod' : undefined);
     
     const user = await db.collection('user').findOne({ email });
     

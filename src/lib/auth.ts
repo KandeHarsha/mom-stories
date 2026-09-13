@@ -9,7 +9,7 @@ import { sendPasswordResetOTP, sendVerificationOTP, sendDeleteAccountEmail } fro
 import { purgeUserData } from "@/services/account-deletion-service";
 
 const client = new MongoClient(process.env.MONGODB_CLUSTER_URL as string);
-const db = client.db();
+const db = client.db(process.env.ENV === "production" ? "mom-stories-prod" : undefined);
 
 
 export const auth = betterAuth({

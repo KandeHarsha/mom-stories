@@ -72,7 +72,7 @@ export async function getUsersByIds(userIds: string[]): Promise<Map<string, { ph
   
   try {
     await mongoClient.connect();
-    const mongoDb = mongoClient.db();
+    const mongoDb = mongoClient.db(process.env.ENV === 'production' ? 'mom-stories-prod' : undefined);
     
     // Convert string IDs to ObjectIds for MongoDB query
     const objectIds = userIds.map((id) => new ObjectId(id));
@@ -98,7 +98,7 @@ export async function getUserIdsByPhase(phase: string): Promise<{ id: string; na
   
   try {
     await mongoClient.connect();
-    const mongoDb = mongoClient.db();
+    const mongoDb = mongoClient.db(process.env.ENV === 'production' ? 'mom-stories-prod' : undefined);
     
     const users = await mongoDb
       .collection('user')
